@@ -3,6 +3,7 @@ package ua.com.radiokot.osmanddisplay.features.main.view
 import android.app.Activity
 import android.bluetooth.le.ScanResult
 import android.companion.CompanionDeviceManager
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.ActivityResult
@@ -22,6 +23,7 @@ import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
+import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.BroadcastingService
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
 
@@ -62,6 +64,14 @@ class MainActivity : AppCompatActivity() {
     private fun initButtons() {
         scan_and_select_device_button.setOnClickListener {
             scanAndSelectDevice()
+        }
+
+        start_broadcasting_button.setOnClickListener {
+            startBroadcastingService()
+        }
+
+        stop_broadcasting_button.setOnClickListener {
+            stopBroadcastingService()
         }
     }
 
@@ -126,6 +136,16 @@ class MainActivity : AppCompatActivity() {
             .loadItem()
             ?.let(SelectedDevice::Selected)
             ?.also(selectedDevice::setValue)
+    }
+
+    private fun startBroadcastingService() {
+        val intent = Intent(this, BroadcastingService::class.java)
+        startForegroundService(intent)
+    }
+
+    private fun stopBroadcastingService() {
+        val intent = Intent(this, BroadcastingService::class.java)
+        stopService(intent)
     }
 
     override fun onDestroy() {
