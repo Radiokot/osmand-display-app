@@ -7,16 +7,30 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import org.koin.android.ext.android.get
+import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 
-class BroadcastingService : Service() {
-    private lateinit var osmAndAidlHelper: OsmAndAidlHelper
+class BroadcastingService : Service(), OsmAndServiceConnectionListener {
+    sealed class Status {
+        object Created : Status()
+        object OsmAndBind : Status()
+        object OsmAndConnected : Status()
+        object RegisteredForNavigationUpdates : Status()
+        object OsmAndDisconnected : Status()
+        object OsmAndUnbind : Status()
+        object OsmAndNotFound : Status()
+    }
 
-    private var isOsmAndMissing = false
-    private val onOsmAndMissingListener = OnOsmAndMissingListener {
-        isOsmAndMissing = true
+    private var status: Status = Status.Created
+        set(value) {
+            field = value
+            Log.d(LOG_TAG, "status: status_changed: new=$status")
+        }
+
+    private val osmAndAidlHelper: OsmAndAidlHelper by inject {
+        parametersOf(this)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -26,7 +40,31 @@ class BroadcastingService : Service() {
 
         super.onCreate()
 
-        osmAndAidlHelper = get { parametersOf(onOsmAndMissingListener) }
+        status =
+            if (osmAndAidlHelper.bindService()) {
+                Status.OsmAndBind
+            } else {
+                Status.OsmAndNotFound
+            }
+    }
+
+    override fun onOsmAndServiceConnected() {
+        status = Status.OsmAndConnected
+
+        osmAndAidlHelper.setNavigationInfoUpdateListener { directionInfo ->
+            Log.d(
+                LOG_TAG, "onNavigationInfoUpdate: received: turnType=${directionInfo.turnType}," +
+                        "\ndistance=${directionInfo.distanceTo}"
+            )
+        }
+
+        if (osmAndAidlHelper.registerForNavigationUpdates(true, 0L) != -1L) {
+            status = Status.RegisteredForNavigationUpdates
+        }
+    }
+
+    override fun onOsmAndServiceDisconnected() {
+        status = Status.OsmAndDisconnected
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

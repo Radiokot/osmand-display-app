@@ -114,7 +114,7 @@ public class OsmAndAidlHelper {
 
 	private final String osmAndPackageName;
 	private final Application app;
-	private final OnOsmAndMissingListener mOsmandMissingListener;
+	private final OsmAndServiceConnectionListener connectionListener;
 	private IOsmAndAidlInterface mIOsmAndAidlInterface;
 
 	private SearchCompleteListener mSearchCompleteListener;
@@ -266,24 +266,24 @@ public class OsmAndAidlHelper {
 			// service through an IDL interface, so get a client-side
 			// representation of that from the raw service object.
 			mIOsmAndAidlInterface = IOsmAndAidlInterface.Stub.asInterface(service);
-			Toast.makeText(app, "OsmAnd service connected", Toast.LENGTH_SHORT).show();
+			connectionListener.onOsmAndServiceConnected();
 		}
 		public void onServiceDisconnected(ComponentName className) {
 			// This is called when the connection with the service has been
 			// unexpectedly disconnected -- that is, its process crashed.
 			mIOsmAndAidlInterface = null;
-			Toast.makeText(app, "OsmAnd service disconnected", Toast.LENGTH_SHORT).show();
+			connectionListener.onOsmAndServiceDisconnected();
 		}
 	};
 
-	public OsmAndAidlHelper(String osmAndPackageName, Application application, OnOsmAndMissingListener listener) {
+	public OsmAndAidlHelper(String osmAndPackageName, Application application,
+							OsmAndServiceConnectionListener connectionListener) {
 		this.osmAndPackageName = osmAndPackageName;
 		this.app = application;
-		this.mOsmandMissingListener = listener;
-		bindService();
+		this.connectionListener = connectionListener;
 	}
 
-	private boolean bindService() {
+	public boolean bindService() {
 		if (mIOsmAndAidlInterface == null) {
 			Intent intent = new Intent("net.osmand.aidl.OsmandAidlServiceV2");
 			intent.setPackage(osmAndPackageName);
@@ -293,7 +293,6 @@ public class OsmAndAidlHelper {
 				return true;
 			} else {
 				Toast.makeText(app, "OsmAnd service NOT bind", Toast.LENGTH_SHORT).show();
-				mOsmandMissingListener.osmAndMissing();
 				return false;
 			}
 		} else {

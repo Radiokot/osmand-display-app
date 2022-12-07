@@ -8,15 +8,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.koin.core.module.Module
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.data.storage.SharedPreferencesObjectPersistence
-import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
-import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
-import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.OnOsmAndMissingListener
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.OsmAndAidlHelper
+import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.OsmAndServiceConnectionListener
+import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
+import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
 import java.util.*
 
 val injectionModules: List<Module> = listOf(
@@ -65,12 +64,12 @@ val injectionModules: List<Module> = listOf(
 
     // OsmAnd
     module {
-           factory { (onOsmAndMissing: OnOsmAndMissingListener) ->
-               OsmAndAidlHelper(
-                   "net.osmand",
-                   get(),
-                   onOsmAndMissing
-               )
-           }
+        factory { (connectionListener: OsmAndServiceConnectionListener) ->
+            OsmAndAidlHelper(
+                "net.osmand",
+                get(),
+                connectionListener,
+            )
+        }
     },
 )
