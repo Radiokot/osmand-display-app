@@ -15,6 +15,8 @@ import ua.com.radiokot.osmanddisplay.base.data.storage.SharedPreferencesObjectPe
 import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
+import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.OnOsmAndMissingListener
+import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.OsmAndAidlHelper
 import java.util.*
 
 val injectionModules: List<Module> = listOf(
@@ -59,5 +61,16 @@ val injectionModules: List<Module> = listOf(
                 filterServiceUuid = UUID.fromString("0000FFE0-0000-1000-8000-00805F9B34FB")
             )
         }
+    },
+
+    // OsmAnd
+    module {
+           factory { (onOsmAndMissing: OnOsmAndMissingListener) ->
+               OsmAndAidlHelper(
+                   "net.osmand",
+                   get(),
+                   onOsmAndMissing
+               )
+           }
     },
 )

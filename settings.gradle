@@ -8,6 +8,13 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        ivy {
+            name = "OsmAndBinariesIvy"
+            url = "https://builder.osmand.net"
+            patternLayout {
+                artifact "ivy/[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]"
+            }
+        }
         google()
         mavenCentral()
     }

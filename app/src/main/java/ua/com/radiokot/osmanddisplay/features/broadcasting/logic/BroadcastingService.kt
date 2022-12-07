@@ -6,15 +6,27 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import org.koin.android.ext.android.get
+import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 
 class BroadcastingService : Service() {
+    private lateinit var osmAndAidlHelper: OsmAndAidlHelper
+
+    private var isOsmAndMissing = false
+    private val onOsmAndMissingListener = OnOsmAndMissingListener {
+        isOsmAndMissing = true
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         Log.d(LOG_TAG, "onCreate: creating: instance=$this")
+
         super.onCreate()
+
+        osmAndAidlHelper = get { parametersOf(onOsmAndMissingListener) }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -66,6 +78,9 @@ class BroadcastingService : Service() {
 
     override fun onDestroy() {
         Log.d(LOG_TAG, "onDestroy: destroying: instance=$this")
+
+        osmAndAidlHelper.cleanupResources()
+
         super.onDestroy()
     }
 

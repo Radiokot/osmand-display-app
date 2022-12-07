@@ -49,6 +49,8 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxkotlin:2.0.0'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
 
+    implementation 'net.osmand:android-aidl-lib:master-snapshot@aar'
+
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
