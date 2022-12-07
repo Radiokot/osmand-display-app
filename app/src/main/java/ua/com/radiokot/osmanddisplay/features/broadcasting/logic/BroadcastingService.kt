@@ -3,6 +3,7 @@ package ua.com.radiokot.osmanddisplay.features.broadcasting.logic
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import ua.com.radiokot.osmanddisplay.R
@@ -42,6 +43,11 @@ class BroadcastingService : Service() {
             .setContentText(getText(R.string.broadcasting_is_running))
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)
+            .apply {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+                }
+            }
             .build()
     }
 
@@ -57,7 +63,7 @@ class BroadcastingService : Service() {
             )
         )
     }
-    
+
     override fun onDestroy() {
         Log.d(LOG_TAG, "onDestroy: destroying: instance=$this")
         super.onDestroy()
