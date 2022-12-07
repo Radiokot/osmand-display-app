@@ -15,6 +15,7 @@ dependencyResolutionManagement {
                 artifact "ivy/[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]"
             }
         }
+        maven { url 'https://jitpack.io' }
         google()
         mavenCentral()
     }

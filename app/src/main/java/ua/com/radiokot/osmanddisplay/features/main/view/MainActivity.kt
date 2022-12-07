@@ -1,9 +1,12 @@
 package ua.com.radiokot.osmanddisplay.features.main.view
 
+import android.Manifest
 import android.app.Activity
 import android.bluetooth.le.ScanResult
 import android.companion.CompanionDeviceManager
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.ActivityResult
@@ -22,6 +25,7 @@ import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
+import ua.com.radiokot.osmanddisplay.base.util.PermissionManager
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.BroadcastingService
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
@@ -53,6 +57,10 @@ class MainActivity : AppCompatActivity() {
 
     private val toastManager: ToastManager by inject()
 
+    private val bluetoothConnectPermission: PermissionManager by lazy {
+        PermissionManager(Manifest.permission.BLUETOOTH_CONNECT, 332)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -67,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         start_broadcasting_button.setOnClickListener {
-            startBroadcastingService()
+            checkPermissionAndStartBroadcastingService()
         }
 
         stop_broadcasting_button.setOnClickListener {
@@ -138,6 +146,14 @@ class MainActivity : AppCompatActivity() {
             ?.also(selectedDevice::setValue)
     }
 
+    private fun checkPermissionAndStartBroadcastingService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            bluetoothConnectPermission.check(this, this::startBroadcastingService)
+        } else {
+            startBroadcastingService()
+        }
+    }
+
     private fun startBroadcastingService() {
         val intent = Intent(this, BroadcastingService::class.java)
         startForegroundService(intent)
@@ -146,6 +162,15 @@ class MainActivity : AppCompatActivity() {
     private fun stopBroadcastingService() {
         val intent = Intent(this, BroadcastingService::class.java)
         stopService(intent)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        bluetoothConnectPermission.handlePermissionResult(requestCode, permissions, grantResults)
     }
 
     override fun onDestroy() {

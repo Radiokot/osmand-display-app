@@ -6,10 +6,18 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import org.koin.android.ext.android.get
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
+import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.subjects.PublishSubject
+import io.reactivex.subjects.Subject
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
+import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
+import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
+import ua.com.radiokot.osmanddisplay.features.broadcasting.model.NavigationDirection
+import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 
 class BroadcastingService : Service(), OsmAndServiceConnectionListener {
@@ -33,6 +41,17 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
         parametersOf(this)
     }
 
+    private val directionsSubject: Subject<NavigationDirection> = PublishSubject.create()
+
+    private val selectedDevicePersistence: ObjectPersistence<SelectedBleDevice> by inject()
+    private val commandSender: DisplayCommandSender by inject {
+        parametersOf(
+            selectedDevicePersistence.loadItem()!!.address
+        )
+    }
+
+    private lateinit var compositeDisposable: CompositeDisposable
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -40,12 +59,42 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
 
         super.onCreate()
 
+        compositeDisposable = CompositeDisposable()
+
+        initOsmAnd()
+        subscribeToDirections()
+    }
+
+    private fun initOsmAnd() {
         status =
             if (osmAndAidlHelper.bindService()) {
                 Status.OsmAndBind
             } else {
                 Status.OsmAndNotFound
             }
+    }
+
+    private fun subscribeToDirections() {
+        var isSenderReady = true
+
+        directionsSubject
+            // Do not receive directions if the sender is not ready.
+            .filter { isSenderReady }
+            .flatMapSingle { direction ->
+                commandSender
+                    .send(DisplayCommand.ShowDirection(direction))
+                    .toSingleDefault(true)
+            }
+            .subscribeBy(
+                onNext = {
+                    Log.d(LOG_TAG, "subscribeToDirections: on_next")
+                },
+                onError = {
+                    Log.e(LOG_TAG, "subscribeToDirections: on_error", it)
+                },
+                onComplete = {}
+            )
+            .addTo(compositeDisposable)
     }
 
     override fun onOsmAndServiceConnected() {
@@ -56,6 +105,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
                 LOG_TAG, "onNavigationInfoUpdate: received: turnType=${directionInfo.turnType}," +
                         "\ndistance=${directionInfo.distanceTo}"
             )
+            directionsSubject.onNext(NavigationDirection(directionInfo))
         }
 
         if (osmAndAidlHelper.registerForNavigationUpdates(true, 0L) != -1L) {
@@ -118,6 +168,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
         Log.d(LOG_TAG, "onDestroy: destroying: instance=$this")
 
         osmAndAidlHelper.cleanupResources()
+        compositeDisposable.dispose()
 
         super.onDestroy()
     }
