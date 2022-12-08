@@ -8,7 +8,7 @@ sealed class DisplayCommand(
 ) {
     abstract fun toByteArray(): ByteArray
 
-    class ShowDirection(
+    data class ShowDirection(
         val turnType: Int,
         val distanceM: Int,
     ) : DisplayCommand(CODE) {

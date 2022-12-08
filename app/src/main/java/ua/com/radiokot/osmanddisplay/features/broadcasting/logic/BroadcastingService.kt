@@ -21,6 +21,7 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.NavigationDirection
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
+import kotlin.math.roundToInt
 
 class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     sealed class Status {
@@ -36,7 +37,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     private var status: Status = Status.Created
         set(value) {
             field = value
-            Log.d(LOG_TAG, "status: status_changed: new=$status")
+            Log.d(LOG_TAG, "status_changed: new=$status")
         }
 
     private val osmAndAidlHelper: OsmAndAidlHelper by inject {
@@ -57,7 +58,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
-        Log.d(LOG_TAG, "onCreate: creating: instance=$this")
+        Log.d(LOG_TAG, "creating: instance=$this")
 
         super.onCreate()
 
@@ -78,19 +79,23 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
 
     private fun subscribeToDirections() {
         directionsSubject
-            .toFlowable(BackpressureStrategy.LATEST)
+            .toFlowable(BackpressureStrategy.DROP)
             .observeOn(Schedulers.newThread(), false, 1)
+            .distinctUntilChanged { old, new ->
+                // Do not re-broadcast items that are shown in the same way.
+                old.isShownLike(new)
+            }
             .flatMapSingle { direction ->
                 commandSender
                     .send(DisplayCommand.ShowDirection(direction))
-                    .toSingleDefault(true)
+                    .toSingleDefault(direction)
             }
             .subscribeBy(
                 onNext = {
-                    Log.d(LOG_TAG, "subscribeToDirections: on_next")
+                    Log.d(LOG_TAG, "direction_sent: direction=$it")
                 },
                 onError = {
-                    Log.e(LOG_TAG, "subscribeToDirections: on_error", it)
+                    Log.e(LOG_TAG, "direction_send_error", it)
                 },
                 onComplete = {}
             )
@@ -102,7 +107,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
 
         osmAndAidlHelper.setNavigationInfoUpdateListener { directionInfo ->
             Log.d(
-                LOG_TAG, "onNavigationInfoUpdate: received: turnType=${directionInfo.turnType}," +
+                LOG_TAG, "navigation_info_update: turnType=${directionInfo.turnType}," +
                         "\ndistance=${directionInfo.distanceTo}"
             )
             directionsSubject.onNext(NavigationDirection(directionInfo))
@@ -118,7 +123,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(LOG_TAG, "onStartCommand: starting: instance=$this")
+        Log.d(LOG_TAG, "starting: instance=$this")
 
         startForeground(NOTIFICATION_ID, createNotification())
 
@@ -165,7 +170,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     }
 
     override fun onDestroy() {
-        Log.d(LOG_TAG, "onDestroy: destroying: instance=$this")
+        Log.d(LOG_TAG, "destroying: instance=$this")
 
         osmAndAidlHelper.cleanupResources()
         compositeDisposable.dispose()

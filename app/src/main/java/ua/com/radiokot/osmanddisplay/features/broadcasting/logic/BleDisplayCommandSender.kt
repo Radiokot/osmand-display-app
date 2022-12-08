@@ -22,9 +22,9 @@ class BleDisplayCommandSender(
     override fun send(command: DisplayCommand): Completable = Completable.create { emitter ->
         isBusySubject.onNext(true)
 
-        Log.d(LOG_TAG, "send: start: command=$command")
+        Log.d(LOG_TAG, "start_sending: command=$command")
 
-        bluetoothCentralManager.autoConnectPeripheral(
+        bluetoothCentralManager.connectPeripheral(
             bluetoothCentralManager.getPeripheral(deviceAddress),
             object : BluetoothPeripheralCallback() {
                 override fun onServicesDiscovered(peripheral: BluetoothPeripheral) {
@@ -35,7 +35,7 @@ class BleDisplayCommandSender(
                         WriteType.WITHOUT_RESPONSE
                     )
 
-                    Log.d(LOG_TAG, "send: write_enqueued")
+                    Log.d(LOG_TAG, "write_enqueued")
                 }
 
                 override fun onCharacteristicWrite(
@@ -46,7 +46,7 @@ class BleDisplayCommandSender(
                 ) {
                     isBusySubject.onNext(false)
 
-                    Log.d(LOG_TAG, "send: write_executed: status=$status")
+                    Log.d(LOG_TAG, "write_executed: status=$status")
 
                     when (status) {
                         GattStatus.SUCCESS -> {
