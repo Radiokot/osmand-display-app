@@ -1,6 +1,7 @@
 package ua.com.radiokot.osmanddisplay.features.broadcasting.logic
 
 import android.bluetooth.BluetoothGattCharacteristic
+import android.util.Log
 import com.welie.blessed.*
 import io.reactivex.Completable
 import io.reactivex.Observable
@@ -21,6 +22,8 @@ class BleDisplayCommandSender(
     override fun send(command: DisplayCommand): Completable = Completable.create { emitter ->
         isBusySubject.onNext(true)
 
+        Log.d(LOG_TAG, "send: start: command=$command")
+
         bluetoothCentralManager.autoConnectPeripheral(
             bluetoothCentralManager.getPeripheral(deviceAddress),
             object : BluetoothPeripheralCallback() {
@@ -31,6 +34,8 @@ class BleDisplayCommandSender(
                         command.toByteArray(),
                         WriteType.WITHOUT_RESPONSE
                     )
+
+                    Log.d(LOG_TAG, "send: write_enqueued")
                 }
 
                 override fun onCharacteristicWrite(
@@ -40,6 +45,8 @@ class BleDisplayCommandSender(
                     status: GattStatus
                 ) {
                     isBusySubject.onNext(false)
+
+                    Log.d(LOG_TAG, "send: write_executed: status=$status")
 
                     when (status) {
                         GattStatus.SUCCESS -> {
@@ -53,5 +60,9 @@ class BleDisplayCommandSender(
                 }
             }
         )
+    }
+
+    private companion object {
+        private const val LOG_TAG = "BLECommandSender"
     }
 }

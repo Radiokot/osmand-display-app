@@ -19,6 +19,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
@@ -28,6 +29,8 @@ import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.util.PermissionManager
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.BroadcastingService
+import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
+import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
 
@@ -80,6 +83,27 @@ class MainActivity : AppCompatActivity() {
 
         stop_broadcasting_button.setOnClickListener {
             stopBroadcastingService()
+        }
+
+        val commandSender: DisplayCommandSender =
+            get { parametersOf(selectedDevicePersistence.loadItem()!!.address) }
+        val turnTypes = setOf(1, 2, 3, 4, 5, 6, 7, 10, 11)
+        val distances = (1..3000)
+        send_random_direction_button.setOnClickListener {
+            commandSender
+                .send(
+                    DisplayCommand.ShowDirection(
+                        turnType = turnTypes.random(),
+                        distanceM = distances.random()
+                    )
+                )
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeBy(
+                    onComplete = { toastManager.short("Complete") },
+                    onError = { toastManager.short("Otsos") }
+                )
+                .addTo(compositeDisposable)
         }
     }
 

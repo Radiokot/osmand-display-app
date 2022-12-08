@@ -6,9 +6,11 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import io.reactivex.BackpressureStrategy
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
 import org.koin.android.ext.android.inject
@@ -75,11 +77,9 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     }
 
     private fun subscribeToDirections() {
-        var isSenderReady = true
-
         directionsSubject
-            // Do not receive directions if the sender is not ready.
-            .filter { isSenderReady }
+            .toFlowable(BackpressureStrategy.LATEST)
+            .observeOn(Schedulers.newThread(), false, 1)
             .flatMapSingle { direction ->
                 commandSender
                     .send(DisplayCommand.ShowDirection(direction))

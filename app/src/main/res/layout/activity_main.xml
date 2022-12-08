@@ -59,4 +59,10 @@
             android:layout_weight="1"
             android:text="@string/stop_broadcasting" />
     </LinearLayout>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/send_random_direction_button"
+        android:text="Send Random"/>
 </LinearLayout>
