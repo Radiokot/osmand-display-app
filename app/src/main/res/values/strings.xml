@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">OsmAnd Display</string>
-    <string name="selected_device">Selected Device</string>
-    <string name="no_device_selected">No device selected</string>
+    <string name="display">Display</string>
+    <string name="no_display_selected">No display selected</string>
     <string name="template_selected_device_name_address">%1$s\n%2$s</string>
     <string name="device_no_name">No name</string>
     <string name="scan_and_select_device">Scan and select</string>

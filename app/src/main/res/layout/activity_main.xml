@@ -20,19 +20,19 @@
             style="@style/TextAppearance.Material3.TitleMedium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/selected_device" />
+            android:text="@string/display" />
 
         <TextView
             android:id="@+id/selected_device_text_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/no_device_selected" />
+            android:text="@string/no_display_selected" />
 
         <Button
-            android:id="@+id/scan_and_select_device_button"
+            android:id="@+id/scan_and_select_display_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             android:text="@string/scan_and_select_device" />
 
         <Space

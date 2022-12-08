@@ -31,4 +31,10 @@ sealed class DisplayCommand(
             const val CODE: Byte = 0x10
         }
     }
+
+    object ClearScreen : DisplayCommand(0x20) {
+        const val CODE: Byte = 0x20
+
+        override fun toByteArray(): ByteArray = byteArrayOf(code)
+    }
 }

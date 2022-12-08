@@ -1,10 +1,8 @@
 package ua.com.radiokot.osmanddisplay.features.main.view
 
-import android.Manifest
 import android.app.Activity
 import android.bluetooth.le.ScanResult
 import android.companion.CompanionDeviceManager
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -26,7 +24,6 @@ import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
-import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.util.PermissionManager
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.BroadcastingService
@@ -49,10 +46,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val selectedDevicePersistence: ObjectPersistence<SelectedBleDevice> by inject()
-
     private val selectedDevice: MutableLiveData<SelectedDevice> =
         MutableLiveData(SelectedDevice.Nothing)
+
+    private val selectedDeviceAddress: String?
+        get() = (selectedDevice.value as? SelectedDevice.Selected)?.address
 
     private val deviceSelectionLauncher =
         registerForActivityResult(StartIntentSenderForResult(), this::onDeviceSelectionResult)
@@ -62,8 +60,11 @@ class MainActivity : AppCompatActivity() {
     private val toastManager: ToastManager by inject()
 
     private val bluetoothConnectPermission: PermissionManager by lazy {
-        PermissionManager(Manifest.permission.BLUETOOTH_CONNECT, 332)
+        PermissionManager("android.permission.BLUETOOTH_CONNECT", 332)
     }
+
+    private val commandSender: DisplayCommandSender
+        get() = get { parametersOf(selectedDeviceAddress!!) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,7 +80,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initButtons() {
-        scan_and_select_device_button.setOnClickListener {
+        scan_and_select_display_button.setOnClickListener {
             scanAndSelectDevice()
         }
 
@@ -91,26 +92,58 @@ class MainActivity : AppCompatActivity() {
             stopBroadcastingService()
         }
 
-        val commandSender: DisplayCommandSender =
-            get { parametersOf(selectedDevicePersistence.loadItem()!!.address) }
-        val turnTypes = setOf(1, 2, 3, 4, 5, 6, 7, 10, 11)
-        val distances = (1..3000)
         send_random_direction_button.setOnClickListener {
-            commandSender
-                .send(
-                    DisplayCommand.ShowDirection(
-                        turnType = turnTypes.random(),
-                        distanceM = distances.random()
-                    )
-                )
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeBy(
-                    onComplete = { toastManager.short("Complete") },
-                    onError = { toastManager.short("Otsos") }
-                )
-                .addTo(compositeDisposable)
+            sendRandomDirection()
         }
+
+        clear_screen_button.setOnClickListener {
+            clearTheScreen()
+        }
+
+        open_osm_and_button.setOnClickListener {
+            openOsmAnd()
+        }
+    }
+
+    private val turnTypes = setOf(1, 2, 3, 4, 5, 6, 7, 10, 11)
+    private val distances = (1..3000)
+    private var randomDirectionDisposable: Disposable? = null
+    private fun sendRandomDirection() {
+        randomDirectionDisposable?.dispose()
+        randomDirectionDisposable = commandSender
+            .send(
+                DisplayCommand.ShowDirection(
+                    turnType = turnTypes.random(),
+                    distanceM = distances.random()
+                )
+            )
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeBy(
+                onComplete = { toastManager.short("Complete") },
+                onError = { toastManager.short("Error") }
+            )
+            .addTo(compositeDisposable)
+    }
+
+    private var clearTheScreenDisposable: Disposable? = null
+    private fun clearTheScreen() {
+        clearTheScreenDisposable?.dispose()
+        clearTheScreenDisposable = commandSender
+            .send(DisplayCommand.ClearScreen)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeBy(
+                onComplete = { toastManager.short("Complete") },
+                onError = { toastManager.short("Error") }
+            )
+            .addTo(compositeDisposable)
+    }
+
+    private fun openOsmAnd() {
+        // TODO: Make package name a property
+        packageManager.getLaunchIntentForPackage("net.osmand")
+            ?.also(this::startActivity)
     }
 
     private var scanAndSelectDisposable: Disposable? = null
@@ -148,7 +181,6 @@ class MainActivity : AppCompatActivity() {
                     data.getParcelableExtra<ScanResult>(CompanionDeviceManager.EXTRA_DEVICE)
                 if (scanResult != null) {
                     val selectedBleDevice = SelectedBleDevice(scanResult)
-                    selectedDevicePersistence.saveItem(selectedBleDevice)
                     selectedDevice.value = SelectedDevice.Selected(selectedBleDevice)
                 }
             }
@@ -158,22 +190,26 @@ class MainActivity : AppCompatActivity() {
         selectedDevice
             .observe(this) { selectedDevice ->
                 when (selectedDevice) {
-                    SelectedDevice.Nothing ->
-                        selected_device_text_view.text = getString(R.string.no_device_selected)
-                    is SelectedDevice.Selected ->
+                    SelectedDevice.Nothing -> {
+                        selected_device_text_view.text = getString(R.string.no_display_selected)
+                        start_broadcasting_button.isEnabled = false
+                        send_random_direction_button.isEnabled = false
+                        clear_screen_button.isEnabled = false
+                    }
+                    is SelectedDevice.Selected -> {
                         selected_device_text_view.text =
                             getString(
                                 R.string.template_selected_device_name_address,
                                 selectedDevice.name ?: getString(R.string.device_no_name),
                                 selectedDevice.address
                             )
+
+                        start_broadcasting_button.isEnabled = true
+                        send_random_direction_button.isEnabled = true
+                        clear_screen_button.isEnabled = true
+                    }
                 }
             }
-
-        selectedDevicePersistence
-            .loadItem()
-            ?.let(SelectedDevice::Selected)
-            ?.also(selectedDevice::setValue)
     }
 
     private fun checkPermissionAndStartBroadcastingService() {
@@ -186,6 +222,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun startBroadcastingService() {
         val intent = Intent(this, BroadcastingService::class.java)
+            .apply {
+                putExtras(BroadcastingService.getBundle(selectedDeviceAddress!!))
+            }
         startForegroundService(intent)
     }
 

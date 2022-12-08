@@ -4,15 +4,19 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import io.reactivex.BackpressureStrategy
+import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
+import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
@@ -46,12 +50,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
 
     private val directionsSubject: Subject<NavigationDirection> = PublishSubject.create()
 
-    private val selectedDevicePersistence: ObjectPersistence<SelectedBleDevice> by inject()
-    private val commandSender: DisplayCommandSender by inject {
-        parametersOf(
-            selectedDevicePersistence.loadItem()!!.address
-        )
-    }
+    private var commandSender: DisplayCommandSender? = null
 
     private lateinit var compositeDisposable: CompositeDisposable
 
@@ -65,7 +64,24 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
         compositeDisposable = CompositeDisposable()
 
         initOsmAnd()
-        subscribeToDirections()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(NOTIFICATION_ID, createNotification())
+
+        val deviceAddress = intent?.getStringExtra(DEVICE_ADDRESS_KEY)
+
+        Log.d(
+            LOG_TAG, "starting: instance=$this," +
+                    "\ndevice_address=$deviceAddress"
+        )
+
+        if (deviceAddress != null) {
+            commandSender = get { parametersOf(deviceAddress) }
+            subscribeToDirections()
+        }
+
+        return super.onStartCommand(intent, flags, startId)
     }
 
     private fun initOsmAnd() {
@@ -77,8 +93,10 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
             }
     }
 
+    private var directionsDisposable: Disposable? = null
     private fun subscribeToDirections() {
-        directionsSubject
+        directionsDisposable?.dispose()
+        directionsDisposable = directionsSubject
             .toFlowable(BackpressureStrategy.DROP)
             .observeOn(Schedulers.newThread(), false, 1)
             .distinctUntilChanged { old, new ->
@@ -87,8 +105,12 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
             }
             .flatMapSingle { direction ->
                 commandSender
-                    .send(DisplayCommand.ShowDirection(direction))
-                    .toSingleDefault(direction)
+                    ?.send(DisplayCommand.ShowDirection(direction))
+                    ?.toSingleDefault(direction)
+                    ?: Single.error(Exception("Command sender is not set"))
+            }
+            .doOnSubscribe {
+                Log.d(LOG_TAG, "subscribed_to_directions")
             }
             .subscribeBy(
                 onNext = {
@@ -96,6 +118,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
                 },
                 onError = {
                     Log.e(LOG_TAG, "direction_send_error", it)
+                    subscribeToDirections()
                 },
                 onComplete = {}
             )
@@ -120,14 +143,6 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
 
     override fun onOsmAndServiceDisconnected() {
         status = Status.OsmAndDisconnected
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(LOG_TAG, "starting: instance=$this")
-
-        startForeground(NOTIFICATION_ID, createNotification())
-
-        return super.onStartCommand(intent, flags, startId)
     }
 
     private fun createNotification(): Notification {
@@ -178,9 +193,15 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
         super.onDestroy()
     }
 
-    private companion object {
+    companion object {
         private const val LOG_TAG = "BcService"
         private const val NOTIFICATION_CHANNEL_ID = "service"
         private const val NOTIFICATION_ID = 1
+
+        private const val DEVICE_ADDRESS_KEY = "device_address"
+
+        fun getBundle(deviceAddress: String) = Bundle().apply {
+            putString(DEVICE_ADDRESS_KEY, deviceAddress)
+        }
     }
 }
