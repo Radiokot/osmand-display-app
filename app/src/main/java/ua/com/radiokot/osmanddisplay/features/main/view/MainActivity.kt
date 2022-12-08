@@ -14,6 +14,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
+import com.google.android.material.elevation.SurfaceColors
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -68,8 +69,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        initColor()
         initSelectedDeviceDisplay()
         initButtons()
+    }
+
+    private fun initColor() {
+        window.statusBarColor = SurfaceColors.SURFACE_2.getColor(this)
     }
 
     private fun initButtons() {

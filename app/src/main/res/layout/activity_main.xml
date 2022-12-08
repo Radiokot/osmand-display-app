@@ -1,68 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_marginStart="16dp"
-    android:layout_marginTop="16dp"
-    android:layout_marginEnd="16dp"
-    android:layout_marginBottom="16dp"
-    android:orientation="vertical"
-    tools:context=".features.main.view.MainActivity">
-
-    <TextView
-        style="@style/TextAppearance.Material3.TitleMedium"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/selected_device" />
-
-    <TextView
-        android:id="@+id/selected_device_text_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/no_device_selected" />
-
-    <Button
-        android:id="@+id/scan_and_select_device_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/scan_and_select_device" />
-
-    <TextView
-        style="@style/TextAppearance.Material3.TitleMedium"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/broadcasting_service" />
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_marginTop="8dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:fitsSystemWindows="true"
+        android:orientation="vertical"
+        tools:context=".features.main.view.MainActivity">
+
+        <TextView
+            style="@style/TextAppearance.Material3.TitleMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/selected_device" />
+
+        <TextView
+            android:id="@+id/selected_device_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/no_device_selected" />
 
         <Button
-            android:id="@+id/start_broadcasting_button"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="0dp"
+            android:id="@+id/scan_and_select_device_button"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/start_broadcasting" />
+            android:layout_marginTop="16dp"
+            android:text="@string/scan_and_select_device" />
 
-        <Button
-            android:id="@+id/stop_broadcasting_button"
-            style="?android:attr/buttonBarButtonStyle"
+        <Space
             android:layout_width="0dp"
+            android:layout_height="24dp" />
+
+        <TextView
+            style="@style/TextAppearance.Material3.TitleMedium"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/stop_broadcasting" />
+            android:text="@string/broadcasting_service" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/start_broadcasting_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="2"
+                android:text="@string/start_broadcasting"
+                app:icon="@drawable/ic_play_arrow"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/stop_broadcasting_button"
+                style="@style/Widget.Material3.Button.IconButton.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/stop_broadcasting"
+                app:icon="@drawable/ic_stop"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="24dp" />
+
+        <TextView
+            style="@style/TextAppearance.Material3.TitleMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/debugging" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/open_osm_and_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/open_osm_and"
+            app:icon="@drawable/ic_navigation" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/send_random_direction_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/send_random_direction"
+            app:icon="@drawable/ic_shuffle" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/clear_screen_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/clear_screen"
+            app:icon="@drawable/ic_clear" />
     </LinearLayout>
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/send_random_direction_button"
-        android:text="Send Random"/>
-</LinearLayout>
+</ScrollView>

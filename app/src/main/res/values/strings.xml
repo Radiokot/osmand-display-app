@@ -12,4 +12,8 @@
     <string name="broadcasting_notifications">Broadcasting</string>
     <string name="start_broadcasting">Start</string>
     <string name="stop_broadcasting">Stop</string>
+    <string name="debugging">Debugging</string>
+    <string name="send_random_direction">Send random direction</string>
+    <string name="clear_screen">Clear the screen</string>
+    <string name="open_osm_and">Open OsmAnd</string>
 </resources>

@@ -2,6 +2,7 @@ package ua.com.radiokot.osmanddisplay
 
 import android.app.Application
 import android.util.Log
+import com.google.android.material.color.DynamicColors
 import io.reactivex.exceptions.UndeliverableException
 import io.reactivex.plugins.RxJavaPlugins
 import org.koin.android.ext.koin.androidContext
@@ -20,6 +21,8 @@ class App: Application() {
             androidContext(this@App)
             modules(injectionModules)
         }
+
+        DynamicColors.applyToActivitiesIfAvailable(this)
 
         initRxErrorHandler()
     }
