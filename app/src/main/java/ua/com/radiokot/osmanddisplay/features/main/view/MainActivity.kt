@@ -21,6 +21,7 @@ import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import org.koin.android.ext.android.get
+import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
@@ -141,8 +142,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openOsmAnd() {
-        // TODO: Make package name a property
-        packageManager.getLaunchIntentForPackage("net.osmand")
+        packageManager.getLaunchIntentForPackage(getKoin().getProperty("osmAndPackage")!!)
             ?.also(this::startActivity)
     }
 

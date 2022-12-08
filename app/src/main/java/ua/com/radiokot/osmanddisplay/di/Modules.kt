@@ -64,8 +64,7 @@ val injectionModules: List<Module> = listOf(
             ScanAndSelectBleDeviceUseCase(
                 // Must be an activity, not an application context.
                 companionDeviceManager = get { parametersOf(activity) },
-                // TODO: Make a property
-                filterServiceUuid = UUID.fromString("0000FFE0-0000-1000-8000-00805F9B34FB")
+                filterServiceUuid = UUID.fromString(getProperty("displayServiceUuid"))
             )
         }
     },
@@ -74,7 +73,7 @@ val injectionModules: List<Module> = listOf(
     module {
         factory { (connectionListener: OsmAndServiceConnectionListener) ->
             OsmAndAidlHelper(
-                "net.osmand",
+                getProperty("osmAndPackage"),
                 get(),
                 connectionListener,
             )
@@ -101,10 +100,8 @@ val injectionModules: List<Module> = listOf(
         factory<DisplayCommandSender> { (deviceAddress: String) ->
             BleDisplayCommandSender(
                 deviceAddress = deviceAddress,
-                // TODO: Make a property
-                serviceUuid = UUID.fromString("0000FFE0-0000-1000-8000-00805F9B34FB"),
-                // TODO: Make a property
-                characteristicUuid = UUID.fromString("0000FFE1-0000-1000-8000-00805F9B34FB"),
+                serviceUuid = UUID.fromString(getProperty("displayServiceUuid")),
+                characteristicUuid = UUID.fromString(getProperty("displayCharacteristicUuid")),
                 bluetoothCentralManager = get()
             )
         }

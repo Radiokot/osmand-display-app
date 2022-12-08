@@ -6,6 +6,7 @@ import com.google.android.material.color.DynamicColors
 import io.reactivex.exceptions.UndeliverableException
 import io.reactivex.plugins.RxJavaPlugins
 import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidFileProperties
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 import ua.com.radiokot.osmanddisplay.di.injectionModules
@@ -20,6 +21,7 @@ class App: Application() {
             androidLogger()
             androidContext(this@App)
             modules(injectionModules)
+            androidFileProperties("app.properties")
         }
 
         DynamicColors.applyToActivitiesIfAvailable(this)
