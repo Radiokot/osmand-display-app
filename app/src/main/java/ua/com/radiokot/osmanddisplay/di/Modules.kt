@@ -102,7 +102,8 @@ val injectionModules: List<Module> = listOf(
                 deviceAddress = deviceAddress,
                 serviceUuid = UUID.fromString(getProperty("displayServiceUuid")),
                 characteristicUuid = UUID.fromString(getProperty("displayCharacteristicUuid")),
-                bluetoothCentralManager = get()
+                keepAlive = true,
+                context = get()
             )
         }
     },

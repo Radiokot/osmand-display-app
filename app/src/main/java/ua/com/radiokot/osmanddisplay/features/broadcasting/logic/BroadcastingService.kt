@@ -25,6 +25,7 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.NavigationDirection
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
+import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 class BroadcastingService : Service(), OsmAndServiceConnectionListener {
@@ -98,7 +99,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
         directionsDisposable?.dispose()
         directionsDisposable = directionsSubject
             .toFlowable(BackpressureStrategy.DROP)
-            .observeOn(Schedulers.newThread(), false, 1)
+            .observeOn(Schedulers.io(), false, 1)
             .distinctUntilChanged { old, new ->
                 // Do not re-broadcast items that are shown in the same way.
                 old.isShownLike(new)
@@ -106,12 +107,22 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
             .flatMapSingle { direction ->
                 commandSender
                     ?.send(DisplayCommand.ShowDirection(direction))
+                    ?.doOnSubscribe {
+                        Log.d(LOG_TAG, "subscribe_to_direction_send: direction=$direction")
+                    }
+                    /** As we don't wait for an acknowledgment that the direction
+                     * is actually displayed, it is better to introduce a delay
+                     * for the time it normally takes to display a direction.
+                     * Combined with backpressure, this delay eliminates
+                     * queueing of outdated directions */
+                    ?.delay(4800, TimeUnit.MILLISECONDS)
                     ?.toSingleDefault(direction)
                     ?: Single.error(Exception("Command sender is not set"))
             }
             .doOnSubscribe {
                 Log.d(LOG_TAG, "subscribed_to_directions")
             }
+            .subscribeOn(Schedulers.io())
             .subscribeBy(
                 onNext = {
                     Log.d(LOG_TAG, "direction_sent: direction=$it")

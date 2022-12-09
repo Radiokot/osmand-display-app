@@ -1,65 +1,136 @@
 package ua.com.radiokot.osmanddisplay.features.broadcasting.logic
 
 import android.bluetooth.BluetoothGattCharacteristic
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.welie.blessed.*
 import io.reactivex.Completable
 import io.reactivex.Observable
+import io.reactivex.Single
+import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
+import io.reactivex.subjects.SingleSubject
 import io.reactivex.subjects.Subject
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import java.util.*
+import java.util.concurrent.TimeUnit
 
+/**
+ * [DisplayCommandSender] implemented on BLE stack.
+ *
+ * @param deviceAddress address of the BLE device in form of AA:BB:CC:DD:EE:FF
+ * @param serviceUuid UUID of the serial service
+ * @param characteristicUuid UUID of the serial service characteristic
+ * @param keepAlive if set, the connection will be left opened for further command sends.
+ * Otherwise, the connection is opened and closed for each command send
+ */
 class BleDisplayCommandSender(
     private val deviceAddress: String,
     private val serviceUuid: UUID,
     private val characteristicUuid: UUID,
-    private val bluetoothCentralManager: BluetoothCentralManager,
+    private val keepAlive: Boolean,
+    private val context: Context,
 ) : DisplayCommandSender {
     private val isBusySubject: Subject<Boolean> = PublishSubject.create()
     override val isBusy: Observable<Boolean> = isBusySubject
 
-    override fun send(command: DisplayCommand): Completable = Completable.create { emitter ->
-        isBusySubject.onNext(true)
+    private var connectedPeripheral: BluetoothPeripheral? = null
+    private val connectionSubject: BehaviorSubject<Boolean> =
+        BehaviorSubject.create()
+    private var writtenValueSubject: SingleSubject<ByteArray> = SingleSubject.create()
 
-        Log.d(LOG_TAG, "start_sending: command=$command")
+    private val centralManager: BluetoothCentralManager by lazy {
+        BluetoothCentralManager(context, centralManagerCallback, Handler(Looper.getMainLooper()))
+    }
 
-        bluetoothCentralManager.connectPeripheral(
-            bluetoothCentralManager.getPeripheral(deviceAddress),
-            object : BluetoothPeripheralCallback() {
-                override fun onServicesDiscovered(peripheral: BluetoothPeripheral) {
-                    peripheral.writeCharacteristic(
-                        serviceUuid,
-                        characteristicUuid,
-                        command.toByteArray(),
-                        WriteType.WITHOUT_RESPONSE
-                    )
+    private val centralManagerCallback = object : BluetoothCentralManagerCallback() {
+        override fun onConnectedPeripheral(peripheral: BluetoothPeripheral) {
+            // We need to wait for service discovery to treat the device as connected.
+            // See peripheralCallback below.
+        }
 
-                    Log.d(LOG_TAG, "write_enqueued")
-                }
+        override fun onDisconnectedPeripheral(peripheral: BluetoothPeripheral, status: HciStatus) {
+            Log.d(LOG_TAG, "peripheral_disconnected: address=${peripheral.address}, status=$status")
 
-                override fun onCharacteristicWrite(
-                    peripheral: BluetoothPeripheral,
-                    value: ByteArray?,
-                    characteristic: BluetoothGattCharacteristic,
-                    status: GattStatus
-                ) {
-                    isBusySubject.onNext(false)
+            connectionSubject.onNext(false)
+        }
+    }
 
-                    Log.d(LOG_TAG, "write_executed: status=$status")
+    private val peripheralCallback = object : BluetoothPeripheralCallback() {
+        override fun onServicesDiscovered(peripheral: BluetoothPeripheral) {
+            Log.d(LOG_TAG, "peripheral_connected: address=${peripheral.address}")
 
-                    when (status) {
-                        GattStatus.SUCCESS -> {
-                            bluetoothCentralManager.cancelConnection(peripheral)
-                            emitter.onComplete()
-                        }
-                        else -> {
-                            emitter.tryOnError(Exception("Failed to send the command. Status: $status"))
-                        }
-                    }
+            connectedPeripheral = peripheral
+            connectionSubject.onNext(true)
+        }
+
+        override fun onCharacteristicWrite(
+            peripheral: BluetoothPeripheral,
+            value: ByteArray,
+            characteristic: BluetoothGattCharacteristic,
+            status: GattStatus
+        ) {
+            Log.d(
+                LOG_TAG, "characteristic_written: value=${value}," +
+                        "\nstatus=$status"
+            )
+
+            if (status == GattStatus.SUCCESS) {
+                writtenValueSubject.onSuccess(value)
+            } else {
+                writtenValueSubject.onError(Exception("Unsuccessful GATT status of write: $status"))
+            }
+        }
+    }
+
+    override fun send(command: DisplayCommand): Completable {
+        val dataToWrite = command.toByteArray()
+
+        return getConnectedPeripheral()
+            .flatMap { peripheral ->
+                writtenValueSubject = SingleSubject.create()
+
+                peripheral.writeCharacteristic(
+                    serviceUuid,
+                    characteristicUuid,
+                    dataToWrite,
+                    WriteType.WITHOUT_RESPONSE
+                )
+
+                Log.d(LOG_TAG, "enqueued_characteristic_write: value=$dataToWrite")
+
+                writtenValueSubject
+            }
+            .filter { writtenData -> writtenData.contentEquals(dataToWrite) }
+            .timeout(6, TimeUnit.SECONDS)
+            .doOnComplete {
+                if (!keepAlive) {
+                    connectedPeripheral?.also(centralManager::cancelConnection)
+                    connectionSubject.onNext(false)
+
+                    Log.d(LOG_TAG, "requested_peripheral_connection_cancellation: address=${deviceAddress}")
                 }
             }
-        )
+            .ignoreElement()
+    }
+
+    private fun getConnectedPeripheral(): Single<BluetoothPeripheral> {
+        return connectionSubject
+            .filter { isConnected -> isConnected && connectedPeripheral != null }
+            .firstOrError()
+            .map { connectedPeripheral!! }
+            .doOnSubscribe {
+                if (connectionSubject.value == false || connectedPeripheral == null) {
+                    centralManager.connectPeripheral(
+                        centralManager.getPeripheral(deviceAddress),
+                        peripheralCallback
+                    )
+
+                    Log.d(LOG_TAG, "requested_peripheral_connection: address=${deviceAddress}")
+                }
+            }
     }
 
     private companion object {
