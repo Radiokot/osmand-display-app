@@ -6,7 +6,6 @@ import android.companion.CompanionDeviceManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
@@ -20,6 +19,7 @@ import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
+import mu.KotlinLogging
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
@@ -66,6 +66,8 @@ class MainActivity : AppCompatActivity() {
 
     private val commandSender: DisplayCommandSender
         get() = get { parametersOf(selectedDeviceAddress!!) }
+
+    private val logger = KotlinLogging.logger("MainActivity@${hashCode()}")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -166,7 +168,9 @@ class MainActivity : AppCompatActivity() {
                 },
                 onError = {
                     toastManager.short(R.string.scan_failed)
-                    Log.e("MainActivity", "Scan failed", it)
+                    logger.error(it) {
+                        "scan_failed"
+                    }
                 }
             )
             .addTo(compositeDisposable)

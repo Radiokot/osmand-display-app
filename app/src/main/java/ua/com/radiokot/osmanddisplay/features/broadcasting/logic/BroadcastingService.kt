@@ -6,7 +6,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.util.Log
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -16,17 +15,15 @@ import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
+import mu.KotlinLogging
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
-import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.NavigationDirection
-import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 import java.util.concurrent.TimeUnit
-import kotlin.math.roundToInt
 
 class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     sealed class Status {
@@ -39,10 +36,16 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
         object OsmAndNotFound : Status()
     }
 
+    private val logger = KotlinLogging.logger("BcService@${hashCode()}")
+
     private var status: Status = Status.Created
         set(value) {
             field = value
-            Log.d(LOG_TAG, "status_changed: new=$status")
+
+            logger.debug {
+                "status_changed: " +
+                        "new=$status"
+            }
         }
 
     private val osmAndAidlHelper: OsmAndAidlHelper by inject {
@@ -58,7 +61,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
-        Log.d(LOG_TAG, "creating: instance=$this")
+        logger.debug { "creating" }
 
         super.onCreate()
 
@@ -72,10 +75,10 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
 
         val deviceAddress = intent?.getStringExtra(DEVICE_ADDRESS_KEY)
 
-        Log.d(
-            LOG_TAG, "starting: instance=$this," +
-                    "\ndevice_address=$deviceAddress"
-        )
+        logger.debug {
+            "starting: " +
+                    "device_address=$deviceAddress"
+        }
 
         if (deviceAddress != null) {
             commandSender = get { parametersOf(deviceAddress) }
@@ -108,7 +111,10 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
                 commandSender
                     ?.send(DisplayCommand.ShowDirection(direction))
                     ?.doOnSubscribe {
-                        Log.d(LOG_TAG, "subscribe_to_direction_send: direction=$direction")
+                        logger.debug {
+                            "subscribe_to_direction_send: " +
+                                    "direction=$direction"
+                        }
                     }
                     /** As we don't wait for an acknowledgment that the direction
                      * is actually displayed, it is better to introduce a delay
@@ -120,15 +126,18 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
                     ?: Single.error(Exception("Command sender is not set"))
             }
             .doOnSubscribe {
-                Log.d(LOG_TAG, "subscribed_to_directions")
+                logger.debug { "subscribed_to_directions" }
             }
             .subscribeOn(Schedulers.io())
             .subscribeBy(
                 onNext = {
-                    Log.d(LOG_TAG, "direction_sent: direction=$it")
+                    logger.debug {
+                        "direction_sent: " +
+                                "direction=$it"
+                    }
                 },
                 onError = {
-                    Log.e(LOG_TAG, "direction_send_error", it)
+                    logger.error(it) { "direction_send_error" }
                     subscribeToDirections()
                 },
                 onComplete = {}
@@ -140,10 +149,12 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
         status = Status.OsmAndConnected
 
         osmAndAidlHelper.setNavigationInfoUpdateListener { directionInfo ->
-            Log.d(
-                LOG_TAG, "navigation_info_update: turnType=${directionInfo.turnType}," +
+            logger.debug {
+                "navigation_info_update: " +
+                        "turnType=${directionInfo.turnType}, " +
                         "\ndistance=${directionInfo.distanceTo}"
-            )
+            }
+
             directionsSubject.onNext(NavigationDirection(directionInfo))
         }
 
@@ -196,7 +207,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     }
 
     override fun onDestroy() {
-        Log.d(LOG_TAG, "destroying: instance=$this")
+        logger.debug { "destroying" }
 
         osmAndAidlHelper.cleanupResources()
         compositeDisposable.dispose()
@@ -205,7 +216,6 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     }
 
     companion object {
-        private const val LOG_TAG = "BcService"
         private const val NOTIFICATION_CHANNEL_ID = "service"
         private const val NOTIFICATION_ID = 1
 

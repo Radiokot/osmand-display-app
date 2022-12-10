@@ -13,6 +13,8 @@ import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.SingleSubject
 import io.reactivex.subjects.Subject
+import mu.KotlinLogging
+import ua.com.radiokot.osmanddisplay.base.extension.encodeAsHexString
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -33,6 +35,8 @@ class BleDisplayCommandSender(
     private val keepAlive: Boolean,
     private val context: Context,
 ) : DisplayCommandSender {
+    private val logger = KotlinLogging.logger("BLECommandSender@${hashCode()}")
+
     private val isBusySubject: Subject<Boolean> = PublishSubject.create()
     override val isBusy: Observable<Boolean> = isBusySubject
 
@@ -52,7 +56,11 @@ class BleDisplayCommandSender(
         }
 
         override fun onDisconnectedPeripheral(peripheral: BluetoothPeripheral, status: HciStatus) {
-            Log.d(LOG_TAG, "peripheral_disconnected: address=${peripheral.address}, status=$status")
+            logger.debug {
+                "peripheral_disconnected: " +
+                        "address=${peripheral.address}, " +
+                        "status=$status"
+            }
 
             connectionSubject.onNext(false)
         }
@@ -60,7 +68,10 @@ class BleDisplayCommandSender(
 
     private val peripheralCallback = object : BluetoothPeripheralCallback() {
         override fun onServicesDiscovered(peripheral: BluetoothPeripheral) {
-            Log.d(LOG_TAG, "peripheral_connected: address=${peripheral.address}")
+            logger.debug {
+                "peripheral_connected: " +
+                        "address=${peripheral.address}"
+            }
 
             connectedPeripheral = peripheral
             connectionSubject.onNext(true)
@@ -72,10 +83,11 @@ class BleDisplayCommandSender(
             characteristic: BluetoothGattCharacteristic,
             status: GattStatus
         ) {
-            Log.d(
-                LOG_TAG, "characteristic_written: value=${value}," +
+            logger.debug {
+                "characteristic_written: " +
+                        "value=${value.encodeAsHexString()}, " +
                         "\nstatus=$status"
-            )
+            }
 
             if (status == GattStatus.SUCCESS) {
                 writtenValueSubject.onSuccess(value)
@@ -99,7 +111,10 @@ class BleDisplayCommandSender(
                     WriteType.WITHOUT_RESPONSE
                 )
 
-                Log.d(LOG_TAG, "enqueued_characteristic_write: value=$dataToWrite")
+                logger.debug {
+                    "enqueued_characteristic_write: " +
+                            "value=${dataToWrite.encodeAsHexString()}"
+                }
 
                 writtenValueSubject
             }
@@ -110,7 +125,10 @@ class BleDisplayCommandSender(
                     connectedPeripheral?.also(centralManager::cancelConnection)
                     connectionSubject.onNext(false)
 
-                    Log.d(LOG_TAG, "requested_peripheral_connection_cancellation: address=${deviceAddress}")
+                    logger.debug {
+                        "requested_peripheral_connection_cancellation: " +
+                                "address=${deviceAddress}"
+                    }
                 }
             }
             .ignoreElement()
@@ -128,12 +146,11 @@ class BleDisplayCommandSender(
                         peripheralCallback
                     )
 
-                    Log.d(LOG_TAG, "requested_peripheral_connection: address=${deviceAddress}")
+                    logger.debug {
+                        "requested_peripheral_connection: " +
+                                "address=${deviceAddress}"
+                    }
                 }
             }
-    }
-
-    private companion object {
-        private const val LOG_TAG = "BLECommandSender"
     }
 }

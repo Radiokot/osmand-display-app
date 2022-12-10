@@ -1,19 +1,22 @@
 package ua.com.radiokot.osmanddisplay
 
 import android.app.Application
-import android.util.Log
+import android.os.Build
 import com.google.android.material.color.DynamicColors
 import io.reactivex.exceptions.UndeliverableException
 import io.reactivex.plugins.RxJavaPlugins
+import mu.KotlinLogging
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidFileProperties
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
+import org.slf4j.impl.HandroidLoggerAdapter
 import ua.com.radiokot.osmanddisplay.di.injectionModules
 import java.io.IOException
-import java.net.SocketException
 
-class App: Application() {
+class App : Application() {
+    private val logger = KotlinLogging.logger("App@${hashCode()}")
+
     override fun onCreate() {
         super.onCreate()
 
@@ -27,6 +30,7 @@ class App: Application() {
         DynamicColors.applyToActivitiesIfAvailable(this)
 
         initRxErrorHandler()
+        initLogging()
     }
 
     private fun initRxErrorHandler() {
@@ -55,7 +59,14 @@ class App: Application() {
                     ?.uncaughtException(Thread.currentThread(), e)
                 return@setErrorHandler
             }
-            Log.w("RxErrorHandler", "Undeliverable exception received", e)
+
+            logger.error(e) { "undeliverable_rx_exception" }
         }
+    }
+
+    private fun initLogging() {
+        HandroidLoggerAdapter.APP_NAME = ""
+        HandroidLoggerAdapter.DEBUG = BuildConfig.DEBUG
+        HandroidLoggerAdapter.ANDROID_API_LEVEL = Build.VERSION.SDK_INT
     }
 }
