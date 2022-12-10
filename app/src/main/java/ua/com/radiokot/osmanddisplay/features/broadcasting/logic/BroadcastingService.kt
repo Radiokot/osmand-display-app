@@ -101,13 +101,22 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     private fun subscribeToDirections() {
         directionsDisposable?.dispose()
         directionsDisposable = directionsSubject
+
+            // Backpressure dropping strategy is set to eliminate queueing of outdated directions.
             .toFlowable(BackpressureStrategy.DROP)
-            .observeOn(Schedulers.io(), false, 1)
+
+            // Do not re-broadcast items that are shown in the same way.
             .distinctUntilChanged { old, new ->
-                // Do not re-broadcast items that are shown in the same way.
                 old.isShownLike(new)
             }
-            .flatMapSingle { direction ->
+
+            // Buffer size is set to 1 to eliminate queueing of outdated directions.
+            .observeOn(Schedulers.io(), false, 1)
+
+            // Concurrency factor of 1 for this flatMap with .delay is essential.
+            // Otherwise it creates multiple subscriptions waiting for delay ending
+            // in parallel, which breaks backpressure.
+            .flatMapSingle({ direction ->
                 commandSender
                     ?.send(DisplayCommand.ShowDirection(direction))
                     ?.doOnSubscribe {
@@ -116,15 +125,22 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
                                     "direction=$direction"
                         }
                     }
-                    /** As we don't wait for an acknowledgment that the direction
-                     * is actually displayed, it is better to introduce a delay
-                     * for the time it normally takes to display a direction.
-                     * Combined with backpressure, this delay eliminates
-                     * queueing of outdated directions */
+                    ?.doOnComplete {
+                        logger.debug {
+                            "display_delay_started: " +
+                                    "direction=$direction"
+                        }
+                    }
+                    // As we don't wait for an acknowledgment that the direction
+                    // is actually displayed, a delay is introduced to make the subscription
+                    // to wait for the time it normally takes to display a direction.
+                    //
+                    // In combination with backpressure, this eliminates
+                    // queueing of outdated directions.
                     ?.delay(4800, TimeUnit.MILLISECONDS)
                     ?.toSingleDefault(direction)
                     ?: Single.error(Exception("Command sender is not set"))
-            }
+            }, false, 1)
             .doOnSubscribe {
                 logger.debug { "subscribed_to_directions" }
             }
@@ -132,15 +148,15 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
             .subscribeBy(
                 onNext = {
                     logger.debug {
-                        "direction_sent: " +
+                        "direction_processed: " +
                                 "direction=$it"
                     }
                 },
                 onError = {
-                    logger.error(it) { "direction_send_error" }
+                    logger.error(it) { "direction_processing_error" }
+
                     subscribeToDirections()
-                },
-                onComplete = {}
+                }
             )
             .addTo(compositeDisposable)
     }
