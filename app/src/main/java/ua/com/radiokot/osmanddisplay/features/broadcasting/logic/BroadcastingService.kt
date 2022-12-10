@@ -24,6 +24,7 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.NavigationDirection
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     sealed class Status {
@@ -103,7 +104,7 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
         directionsDisposable = directionsSubject
 
             // Backpressure dropping strategy is set to eliminate queueing of outdated directions.
-            .toFlowable(BackpressureStrategy.DROP)
+            .toFlowable(BackpressureStrategy.LATEST)
 
             // Do not re-broadcast items that are shown in the same way.
             .distinctUntilChanged { old, new ->
@@ -174,6 +175,76 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
             directionsSubject.onNext(NavigationDirection(directionInfo))
         }
 
+        osmAndAidlHelper.setVoiceRouterNotifyListener { voiceCommand ->
+            val commands = voiceCommand.commands
+
+            logger.debug {
+                "voice_command: " +
+                        commands.joinToString(":")
+            }
+
+            fun String.toDistance(): Int =
+                toDouble().roundToInt().coerceAtLeast(0)
+
+            val navigationDirection: NavigationDirection? =
+                when {
+//                    commands[0] == "go_ahead" -> {
+//                        NavigationDirection(
+//                            turnType = 1,
+//                            distanceM = commands[1].toDistance()
+//                        )
+//                    }
+                    commands[0] == "turn" || commands[0] == "prepare_turn" -> {
+                        val distance = commands[2].toDistance()
+
+                        when (commands[1]) {
+                            "left" -> {
+                                NavigationDirection(
+                                    turnType = 2,
+                                    distanceM = distance
+                                )
+                            }
+                            "left_sh" -> {
+                                NavigationDirection(
+                                    turnType = 4,
+                                    distanceM = distance
+                                )
+                            }
+                            "left_sl" -> {
+                                NavigationDirection(
+                                    turnType = 3,
+                                    distanceM = distance
+                                )
+                            }
+                            "right" -> {
+                                NavigationDirection(
+                                    turnType = 5,
+                                    distanceM = distance
+                                )
+                            }
+                            "right_sh" -> {
+                                NavigationDirection(
+                                    turnType = 7,
+                                    distanceM = distance
+                                )
+                            }
+                            "right_sl" -> {
+                                NavigationDirection(
+                                    turnType = 6,
+                                    distanceM = distance
+                                )
+                            }
+                            else -> null
+                        }
+                    }
+                    else -> null
+                }
+
+            navigationDirection?.also(directionsSubject::onNext)
+        }
+        if (osmAndAidlHelper.registerForVoiceRouterMessages(true, 1L) != -1L) {
+            status = Status.RegisteredForNavigationUpdates
+        }
         if (osmAndAidlHelper.registerForNavigationUpdates(true, 0L) != -1L) {
             status = Status.RegisteredForNavigationUpdates
         }

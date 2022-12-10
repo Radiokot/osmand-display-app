@@ -4,7 +4,6 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import com.welie.blessed.*
 import io.reactivex.Completable
 import io.reactivex.Observable
