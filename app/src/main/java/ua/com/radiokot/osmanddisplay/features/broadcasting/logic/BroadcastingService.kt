@@ -165,14 +165,19 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     override fun onOsmAndServiceConnected() {
         status = Status.OsmAndConnected
 
+        var muteNavigationUpdates = false
+
         osmAndAidlHelper.setNavigationInfoUpdateListener { directionInfo ->
             logger.debug {
                 "navigation_info_update: " +
                         "turnType=${directionInfo.turnType}, " +
-                        "\ndistance=${directionInfo.distanceTo}"
+                        "\ndistance=${directionInfo.distanceTo}, " +
+                        "\nmute=$muteNavigationUpdates"
             }
 
-            directionsSubject.onNext(NavigationDirection(directionInfo))
+            if (!muteNavigationUpdates) {
+                directionsSubject.onNext(NavigationDirection(directionInfo))
+            }
         }
 
         osmAndAidlHelper.setVoiceRouterNotifyListener { voiceCommand ->
@@ -240,8 +245,18 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
                     else -> null
                 }
 
-            navigationDirection?.also(directionsSubject::onNext)
+            if (navigationDirection != null) {
+                // Mute regular directions when close to the turn.
+                if (navigationDirection.distanceM == 0) {
+                    muteNavigationUpdates = false
+                } else if (navigationDirection.distanceM < 200) {
+                    muteNavigationUpdates = true
+                }
+
+                directionsSubject.onNext(navigationDirection)
+            }
         }
+
         if (osmAndAidlHelper.registerForVoiceRouterMessages(true, 1L) != -1L) {
             status = Status.RegisteredForNavigationUpdates
         }
