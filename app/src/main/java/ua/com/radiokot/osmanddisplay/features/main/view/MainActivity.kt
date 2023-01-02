@@ -32,6 +32,7 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandS
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
+import ua.com.radiokot.osmanddisplay.features.map.view.MapActivity
 
 class MainActivity : AppCompatActivity() {
     sealed class SelectedDevice {
@@ -106,6 +107,10 @@ class MainActivity : AppCompatActivity() {
         open_osm_and_button.setOnClickListener {
             openOsmAnd()
         }
+
+        open_map_button.setOnClickListener {
+            openMap()
+        }
     }
 
     private val turnTypes = setOf(1, 2, 3, 4, 5, 6, 7, 10, 11)
@@ -146,6 +151,10 @@ class MainActivity : AppCompatActivity() {
     private fun openOsmAnd() {
         packageManager.getLaunchIntentForPackage(getKoin().getProperty("osmAndPackage")!!)
             ?.also(this::startActivity)
+    }
+
+    private fun openMap() {
+        startActivity(Intent(this, MapActivity::class.java))
     }
 
     private var scanAndSelectDisposable: Disposable? = null

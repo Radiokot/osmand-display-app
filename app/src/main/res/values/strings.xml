@@ -16,4 +16,6 @@
     <string name="send_random_direction">Send random direction</string>
     <string name="clear_screen">Clear the screen</string>
     <string name="open_osm_and">Open OsmAnd</string>
+    <string name="open_map">Open map</string>
+    <string name="capture_bitmap">Capture bitmap</string>
 </resources>

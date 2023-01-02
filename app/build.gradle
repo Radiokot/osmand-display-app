@@ -4,6 +4,12 @@ plugins {
     id 'org.jetbrains.kotlin.android.extensions'
 }
 
+def keystorePropertiesFile = rootProject.file("app/keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace 'ua.com.radiokot.osmanddisplay'
     compileSdk 32
@@ -14,6 +20,13 @@ android {
         targetSdk 32
         versionCode 1
         versionName "0.1"
+
+        if (keystoreProperties['mapboxPublicToken'] != null) {
+            buildConfigField 'String', 'MAPBOX_PUBLIC_TOKEN', "\"" + keystoreProperties['mapboxPublicToken'] + "\""
+            resValue "string", "mapbox_access_token", "${keystoreProperties['mapboxPublicToken']}"
+        } else {
+            throw new GradleException("mapboxPublicToken is required to use the Mapbox SDK")
+        }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -54,6 +67,7 @@ dependencies {
 
     implementation 'net.osmand:android-aidl-lib:master-snapshot@aar'
     implementation 'com.github.weliem:blessed-android:2.4.0'
+    implementation 'com.mapbox.maps:android:10.10.0'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
