@@ -8,27 +8,32 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.elevation.SurfaceColors
 import com.mapbox.geojson.Point
 import com.mapbox.maps.*
-import com.mapbox.maps.extension.style.image.image
 import com.mapbox.maps.extension.style.layers.addLayer
+import com.mapbox.maps.extension.style.layers.generated.lineLayer
 import com.mapbox.maps.extension.style.layers.generated.symbolLayer
-import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor
+import com.mapbox.maps.extension.style.layers.properties.generated.IconRotationAlignment
+import com.mapbox.maps.extension.style.layers.properties.generated.LineCap
+import com.mapbox.maps.extension.style.layers.properties.generated.LineJoin
+import com.mapbox.maps.extension.style.layers.properties.generated.SymbolPlacement
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.extension.style.style
 import com.mapbox.maps.plugin.scalebar.scalebar
 import kotlinx.android.synthetic.main.activity_map.*
+import mu.KotlinLogging
 import org.koin.android.ext.android.inject
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
-import java.io.ByteArrayOutputStream
 import kotlin.experimental.or
 
 class MapActivity : AppCompatActivity() {
     private val toastManager: ToastManager by inject()
 
+    private val logger = KotlinLogging.logger("MapActivity@${hashCode()}")
+
     private val snapshotter: Snapshotter by lazy {
         val options = MapSnapshotOptions.Builder()
-            .size(Size(600f, 600f))
+            .size(Size(200f, 200f))
             .resourceOptions(
                 ResourceOptions.Builder()
                     .accessToken(ua.com.radiokot.osmanddisplay.BuildConfig.MAPBOX_PUBLIC_TOKEN)
@@ -43,24 +48,111 @@ class MapActivity : AppCompatActivity() {
 
         Snapshotter(this, options, overlayOptions).apply {
             setStyleListener(object : SnapshotStyleListener {
-                val markerIconId = "marker"
-                val markerLocationId = "marker_location"
-                val markerLayerId = "marker_layer"
-
                 override fun onDidFinishLoadingStyle(style: Style) {
                 }
 
                 override fun onDidFullyLoadStyle(style: Style) {
                     style.addImage(
-                        markerIconId,
-                        BitmapFactory.decodeResource(resources, R.drawable.bicycle)
+                        "arrow-my",
+                        BitmapFactory.decodeResource(resources, R.drawable.arrow)
                     )
-                    style.addSource(geoJsonSource(markerIconId) {
-                        geometry(Point.fromLngLat(CENTER_LNG, CENTER_LAT))
+                    style.addImage(
+                        "me-my",
+                        BitmapFactory.decodeResource(resources, R.drawable.me)
+                    )
+                    style.addSource(geoJsonSource("geojson-my") {
+                        data(
+                            """
+                            {
+                                "type": "FeatureCollection",
+                                "features": [
+                                    {
+                                        "type": "Feature",
+                                        "properties": {
+                                            "name": "На тот берег",
+                                            "type": "Велосипед",
+                                            "links": [
+                                                {
+                                                    "href": "https://www.strava.com/routes/3044739247970226322"
+                                                }
+                                            ]
+                                        },
+                                        "geometry": {
+                                            "type": "LineString",
+                                            "coordinates": [
+                                                [
+                                                    35.072030000000005,
+                                                    48.45664000000001,
+                                                    102.83
+                                                ],
+                                                [
+                                                    35.07115,
+                                                    48.4566,
+                                                    106.59
+                                                ],
+                                                [
+                                                    35.07109000252696,
+                                                    48.457312500038434,
+                                                    106.50000000000001
+                                                ],
+                                                [
+                                                    35.07103000336981,
+                                                    48.45802500004566,
+                                                    105.98
+                                                ],
+                                                [
+                        35.07097000252846,
+                        48.45873750002172,
+                        105.23
+                    ],
+                    [
+                        35.070910000000005,
+                        48.459450000000004,
+                        104.99000000000001
+                    ],
+                    [
+                        35.070910000000005,
+                        48.459410000000005,
+                        104.99000000000001
+                    ],
+                    [
+                        35.07085,
+                        48.459610000000005,
+                        104.94
+                    ],
+                    [
+                        35.07079,
+                        48.459680000000006,
+                        104.85000000000001
+                    ]
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        """.trimIndent()
+                        )
                     })
-                    style.addLayer(symbolLayer(markerLayerId, markerLocationId) {
-                        iconImage(markerIconId)
-                        iconAnchor(IconAnchor.BOTTOM)
+                    style.addLayer(lineLayer("geojson-line-my", "geojson-my") {
+                        lineCap(LineCap.ROUND)
+                        lineJoin(LineJoin.ROUND)
+                        lineWidth(18.0)
+                        lineColor("#FFF")
+                    })
+                    style.addLayer(symbolLayer("geojson-line-directions-my", "geojson-my") {
+                        symbolPlacement(SymbolPlacement.LINE)
+                        symbolSpacing(25.0)
+                        iconImage("arrow-my")
+                        iconAllowOverlap(true)
+                        iconIgnorePlacement(true)
+                        iconRotate(90.0)
+                        iconRotationAlignment(IconRotationAlignment.MAP)
+                    })
+                    style.addLayer(symbolLayer("me-icon-my", "geojson-my") {
+                        symbolPlacement(SymbolPlacement.POINT)
+                        iconImage("me-my")
+                        iconAllowOverlap(true)
+                        iconIgnorePlacement(true)
                     })
                 }
             })
@@ -70,7 +162,7 @@ class MapActivity : AppCompatActivity() {
             setCamera(
                 CameraOptions.Builder()
                     .center(Point.fromLngLat(CENTER_LNG, CENTER_LAT))
-                    .zoom(15.5)
+                    .zoom(14.5)
                     .build()
             )
         }
@@ -93,22 +185,7 @@ class MapActivity : AppCompatActivity() {
         map_view.apply {
             scalebar.enabled = false
 
-            getMapboxMap().loadStyle(style("mapbox://styles/radiokot/clcezktcw001614o7bunaemim") {
-                val markerIconId = "marker"
-                val markerLocationId = "marker_location"
-                val markerLayerId = "marker_layer"
-
-                +image(markerIconId) {
-                    bitmap(BitmapFactory.decodeResource(resources, R.drawable.bicycle))
-                }
-                +geoJsonSource(markerLocationId) {
-                    geometry(Point.fromLngLat(CENTER_LNG, CENTER_LAT))
-                }
-                +symbolLayer(markerLayerId, markerLocationId) {
-                    iconImage(markerIconId)
-                    iconAnchor(IconAnchor.BOTTOM)
-                }
-            })
+            getMapboxMap().loadStyle(style("mapbox://styles/radiokot/clcezktcw001614o7bunaemim") {})
         }
     }
 
@@ -119,13 +196,10 @@ class MapActivity : AppCompatActivity() {
     }
 
     private fun captureAndDisplayBitmap() {
-//        snapshotter.start { snapshot ->
-//            runOnUiThread {
-//                onBitmapCaptured(snapshot?.bitmap())
-//            }
-//        }
-        map_view.snapshot { bitmap ->
-            runOnUiThread { onBitmapCaptured(bitmap) }
+        snapshotter.start { snapshot ->
+            runOnUiThread {
+                onBitmapCaptured(snapshot?.bitmap())
+            }
         }
     }
 
@@ -155,13 +229,14 @@ class MapActivity : AppCompatActivity() {
                 val bit = (pixel and 0x80) shr 7
 
                 val outputByteIndex = i / 8 + j * bytesWidth
-                output[outputByteIndex] = output[outputByteIndex] or ((bit shl (8 - i % 8)).toByte())
+                output[outputByteIndex] =
+                    output[outputByteIndex] or ((bit shl (8 - i % 8)).toByte())
 
                 bwBitmap.setPixel(i, j, if (bit == 1) Color.WHITE else Color.BLACK)
             }
         }
-        scaledBitmap.recycle()
         bitmap_image_view.setImageBitmap(bwBitmap)
+        scaledBitmap.recycle()
         toastManager.short("BW bitmap bytes: ${output.size}")
     }
 
