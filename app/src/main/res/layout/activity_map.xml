@@ -18,7 +18,7 @@
         android:layout_height="200dp"
         mapbox:mapbox_cameraTargetLat="48.4573"
         mapbox:mapbox_cameraTargetLng="35.0715"
-        mapbox:mapbox_cameraZoom="14"
+        mapbox:mapbox_cameraZoom="14.5"
         tools:background="@android:color/darker_gray" />
 
     <Space
@@ -39,8 +39,8 @@
 
     <ImageView
         android:id="@+id/bitmap_image_view"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
+        android:layout_width="200px"
+        android:layout_height="200px"
         android:importantForAccessibility="no"
         tools:background="@android:color/darker_gray" />
 </LinearLayout>
