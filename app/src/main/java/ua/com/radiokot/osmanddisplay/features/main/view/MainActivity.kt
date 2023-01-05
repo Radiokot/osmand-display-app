@@ -154,7 +154,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openMap() {
-        startActivity(Intent(this, MapActivity::class.java))
+        startActivity(
+            Intent(this, MapActivity::class.java)
+                .putExtras(MapActivity.getBundle(selectedDeviceAddress))
+        )
     }
 
     private var scanAndSelectDisposable: Disposable? = null

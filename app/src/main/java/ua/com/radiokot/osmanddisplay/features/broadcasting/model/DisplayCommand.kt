@@ -11,7 +11,7 @@ sealed class DisplayCommand(
     data class ShowDirection(
         val turnType: Int,
         val distanceM: Int,
-    ) : DisplayCommand(CODE) {
+    ) : DisplayCommand(0x10) {
 
         constructor(direction: NavigationDirection) : this(
             turnType = direction.turnType,
@@ -26,15 +26,37 @@ sealed class DisplayCommand(
                 .order(ByteOrder.LITTLE_ENDIAN)
                 .putInt(distanceM)
                 .array()
-
-        companion object {
-            const val CODE: Byte = 0x10
-        }
     }
 
     object ClearScreen : DisplayCommand(0x20) {
-        const val CODE: Byte = 0x20
+        override fun toByteArray(): ByteArray = byteArrayOf(code)
+    }
 
+    object FramePrepare : DisplayCommand(0x30) {
+        override fun toByteArray(): ByteArray = byteArrayOf(code)
+    }
+
+    class FrameData(val data: ByteArray) : DisplayCommand(0x31) {
+        init {
+            require(data.size <= MAX_DATA_SIZE) {
+                "Data can't be bigger than $MAX_DATA_SIZE bytes"
+            }
+        }
+
+        override fun toByteArray(): ByteArray =
+            ByteBuffer
+                .allocate(data.size + 2)
+                .put(code)
+                .put(data.size.toByte())
+                .put(data)
+                .array()
+
+        companion object {
+            const val MAX_DATA_SIZE = 62
+        }
+    }
+
+    object FrameShow : DisplayCommand(0x32) {
         override fun toByteArray(): ByteArray = byteArrayOf(code)
     }
 }

@@ -26,11 +26,11 @@
         android:layout_height="24dp" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/capture_bitmap_button"
+        android:id="@+id/capture_and_send_bitmap_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="@string/capture_bitmap"
+        android:text="@string/capture_and_send_bitmap"
         app:icon="@drawable/ic_photo_camera" />
 
     <Space

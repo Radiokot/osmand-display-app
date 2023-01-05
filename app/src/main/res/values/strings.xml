@@ -18,4 +18,5 @@
     <string name="open_osm_and">Open OsmAnd</string>
     <string name="open_map">Open map</string>
     <string name="capture_bitmap">Capture bitmap</string>
+    <string name="capture_and_send_bitmap">Capture and send bitmap</string>
 </resources>

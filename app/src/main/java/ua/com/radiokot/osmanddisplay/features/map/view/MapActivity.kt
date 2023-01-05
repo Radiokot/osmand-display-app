@@ -3,10 +3,12 @@ package ua.com.radiokot.osmanddisplay.features.map.view
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
 import com.google.android.material.elevation.SurfaceColors
-import com.mapbox.geojson.Point
+import com.mapbox.geojson.*
 import com.mapbox.maps.*
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.lineLayer
@@ -19,17 +21,39 @@ import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.extension.style.style
 import com.mapbox.maps.plugin.scalebar.scalebar
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
+import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_map.*
 import mu.KotlinLogging
+import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
+import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
+import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
+import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
+import ua.com.radiokot.osmanddisplay.features.map.logic.SendFrameUseCase
 import kotlin.experimental.or
 
 class MapActivity : AppCompatActivity() {
     private val toastManager: ToastManager by inject()
 
+    private val compositeDisposable = CompositeDisposable()
+
+    private val deviceAddress: String? by lazy {
+        intent.getStringExtra(DEVICE_ADDRESS_EXTRA)
+    }
+
+    private val commandSender: DisplayCommandSender
+        get() = get { parametersOf(deviceAddress) }
+
     private val logger = KotlinLogging.logger("MapActivity@${hashCode()}")
+
+    private var centerLng = CENTER_LNG
+    private var centerLat = CENTER_LAT
 
     private val snapshotter: Snapshotter by lazy {
         val options = MapSnapshotOptions.Builder()
@@ -158,13 +182,6 @@ class MapActivity : AppCompatActivity() {
             })
 
             setStyleUri("mapbox://styles/radiokot/clcezktcw001614o7bunaemim")
-
-            setCamera(
-                CameraOptions.Builder()
-                    .center(Point.fromLngLat(CENTER_LNG, CENTER_LAT))
-                    .zoom(14.5)
-                    .build()
-            )
         }
     }
 
@@ -190,64 +207,95 @@ class MapActivity : AppCompatActivity() {
     }
 
     private fun initButtons() {
-        capture_bitmap_button.setOnClickListener {
-            captureAndDisplayBitmap()
+        capture_and_send_bitmap_button.apply {
+            setText(
+                if (deviceAddress != null)
+                    R.string.capture_and_send_bitmap
+                else
+                    R.string.capture_bitmap
+            )
+
+            setOnClickListener {
+                captureAndDisplayBitmap()
+            }
         }
     }
 
     private fun captureAndDisplayBitmap() {
+        snapshotter.setCamera(
+            CameraOptions.Builder()
+                .center(Point.fromLngLat(centerLng, centerLat))
+                .zoom(14.5)
+                .build()
+        )
+
         snapshotter.start { snapshot ->
             runOnUiThread {
                 onBitmapCaptured(snapshot?.bitmap())
             }
         }
+
+        centerLng += 0.0001
+        centerLat += 0.0003
     }
 
     private fun onBitmapCaptured(bitmap: Bitmap?) {
         if (bitmap != null) {
-            toastManager.short("Bitmap captured: ${bitmap.width}x${bitmap.height}")
-            processAndShowBitmap(bitmap)
+            showAndSendBitmap(bitmap)
         } else {
             toastManager.short("The map is not yet ready")
         }
     }
 
-    private fun processAndShowBitmap(bitmap: Bitmap) {
+    private fun showAndSendBitmap(bitmap: Bitmap) {
         val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 200, 200, false)
         bitmap.recycle()
-        val bwBitmap =
-            Bitmap.createBitmap(scaledBitmap.width, scaledBitmap.height, Bitmap.Config.ARGB_8888)
-        val bytesWidth =
-            if (scaledBitmap.width % 8 == 0) scaledBitmap.width / 8 else scaledBitmap.width / 8 + 1
-        val bytesHeight = scaledBitmap.height
-        val output = ByteArray(bytesWidth * bytesHeight)
 
-        (0 until scaledBitmap.width).forEach { i ->
-            (0 until scaledBitmap.height).forEach { j ->
-                val pixel = scaledBitmap.getPixel(i, j)
-                // 8th bit flips at 128, so it is a 50% threshold.
-                val bit = (pixel and 0x80) shr 7
-
-                val outputByteIndex = i / 8 + j * bytesWidth
-                output[outputByteIndex] =
-                    output[outputByteIndex] or ((bit shl (8 - i % 8)).toByte())
-
-                bwBitmap.setPixel(i, j, if (bit == 1) Color.WHITE else Color.BLACK)
+        bitmap_image_view.drawable.also {
+            if (it is BitmapDrawable) {
+                it.bitmap.recycle()
             }
         }
-        bitmap_image_view.setImageBitmap(bwBitmap)
-        scaledBitmap.recycle()
-        toastManager.short("BW bitmap bytes: ${output.size}")
+        bitmap_image_view.setImageBitmap(scaledBitmap)
+
+        if (deviceAddress != null) {
+            sendBitmap(scaledBitmap)
+        }
+    }
+
+    private fun sendBitmap(bitmap: Bitmap) {
+        SendFrameUseCase(
+            frame = bitmap,
+            commandSender = commandSender
+        )
+            .perform()
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnTerminate {
+                bitmap.recycle()
+            }
+            .subscribeBy(
+                onComplete = { toastManager.short("Complete") },
+                onError = { toastManager.short("Error") }
+            )
+            .addTo(compositeDisposable)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         snapshotter.cancel()
         snapshotter.destroy()
+        compositeDisposable.dispose()
     }
 
-    private companion object {
+    companion object {
         private const val CENTER_LAT = 48.4573
         private const val CENTER_LNG = 35.0715
+
+        private const val DEVICE_ADDRESS_EXTRA = "device_address"
+
+        fun getBundle(deviceAddress: String?) = Bundle().apply {
+            putString(DEVICE_ADDRESS_EXTRA, deviceAddress)
+        }
     }
 }
