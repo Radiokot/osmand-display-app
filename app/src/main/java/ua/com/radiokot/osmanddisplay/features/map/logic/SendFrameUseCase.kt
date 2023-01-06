@@ -50,15 +50,19 @@ class SendFrameUseCase(
         val bytesHeight = frame.height
         val output = ByteArray(bytesWidth * bytesHeight)
 
-        (0 until frame.width).forEach { i ->
-            (0 until frame.height).forEach { j ->
+        (0 until frame.width).forEach { x ->
+            (0 until frame.height).forEach { y ->
                 // In a grayscale bitmap all RGB bytes are equal.
                 // 8th bit of blue flips at 128, so it is a 50% white threshold.
-                val bit = (frame.getPixel(i, j) and 0x80) shr 7
+                // If the pixel is white, the value is 0b10000000
+                val unshiftedBit = frame.getPixel(x, y) and 0x80
 
-                val outputByteIndex = i / 8 + j * bytesWidth
+                // Set the corresponding output bit by shifting
+                // the unshifted bit to the right according to the
+                // pixel X coordinate.
+                val outputByteIndex = x / 8 + y * bytesWidth
                 output[outputByteIndex] =
-                    output[outputByteIndex] or ((bit shl (8 - i % 8)).toByte())
+                    output[outputByteIndex] or (unshiftedBit shr x % 8).toByte()
             }
         }
 
