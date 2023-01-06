@@ -23,7 +23,6 @@ class SendFrameUseCase(
 
     fun perform(): Completable {
         return sendFramePrepare()
-            .delay(400, TimeUnit.MILLISECONDS, Schedulers.io())
             .flatMap {
                 getEncodedFrame()
             }
@@ -42,6 +41,8 @@ class SendFrameUseCase(
     private fun sendFramePrepare(): Single<Boolean> =
         commandSender
             .send(DisplayCommand.FramePrepare)
+            // Delay required for the display initialization.
+            .delay(1000, TimeUnit.MILLISECONDS, Schedulers.io())
             .toSingleDefault(true)
 
     private fun getEncodedFrame(): Single<ByteArray> = {
@@ -73,9 +74,10 @@ class SendFrameUseCase(
         Completable.concat(
             encodedFrame
                 .asIterable()
-                .chunked(32)
+                .chunked(16)
                 .map { dataChunk ->
                     commandSender.send(DisplayCommand.FrameData(dataChunk.toByteArray()))
+                        .delay(1, TimeUnit.MILLISECONDS, Schedulers.io())
                 }
         )
             .toSingleDefault(true)
@@ -83,5 +85,7 @@ class SendFrameUseCase(
     private fun sendFrameShow(): Single<Boolean> =
         commandSender
             .send(DisplayCommand.FrameShow)
+            // Delay required for the frame to be shown.
+            .delay(1400, TimeUnit.MILLISECONDS, Schedulers.io())
             .toSingleDefault(true)
 }

@@ -276,7 +276,10 @@ class MapActivity : AppCompatActivity() {
             }
             .subscribeBy(
                 onComplete = { toastManager.short("Complete") },
-                onError = { toastManager.short("Error") }
+                onError = {
+                    it.printStackTrace()
+                    toastManager.short("Error")
+                }
             )
             .addTo(compositeDisposable)
     }
