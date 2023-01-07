@@ -5,6 +5,12 @@ import java.nio.ByteOrder
 
 sealed class DisplayCommand(
     val code: Byte,
+
+    /**
+     * Whether an acknowledgment from the device
+     * is required for the sent command to be considered successful
+     */
+    val requiresAcq: Boolean = false
 ) {
     abstract fun toByteArray(): ByteArray
 
@@ -32,7 +38,7 @@ sealed class DisplayCommand(
         override fun toByteArray(): ByteArray = byteArrayOf(code)
     }
 
-    object FramePrepare : DisplayCommand(0x30) {
+    object FramePrepare : DisplayCommand(0x30, requiresAcq = true) {
         override fun toByteArray(): ByteArray = byteArrayOf(code)
     }
 

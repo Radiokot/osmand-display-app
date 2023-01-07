@@ -77,7 +77,7 @@ class SendFrameUseCase(
                 .chunked(16)
                 .map { dataChunk ->
                     commandSender.send(DisplayCommand.FrameData(dataChunk.toByteArray()))
-                        .delay(1, TimeUnit.MILLISECONDS, Schedulers.io())
+                        .delay(2, TimeUnit.MILLISECONDS, Schedulers.io())
                 }
         )
             .toSingleDefault(true)
@@ -86,6 +86,6 @@ class SendFrameUseCase(
         commandSender
             .send(DisplayCommand.FrameShow)
             // Delay required for the frame to be shown.
-            .delay(1400, TimeUnit.MILLISECONDS, Schedulers.io())
+            .delay(1900, TimeUnit.MILLISECONDS, Schedulers.io())
             .toSingleDefault(true)
 }

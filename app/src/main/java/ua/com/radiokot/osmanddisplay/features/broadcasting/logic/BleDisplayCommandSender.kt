@@ -107,7 +107,10 @@ class BleDisplayCommandSender(
                     serviceUuid,
                     characteristicUuid,
                     dataToWrite,
-                    WriteType.WITHOUT_RESPONSE
+                    if (command.requiresAcq)
+                        WriteType.WITH_RESPONSE
+                    else
+                        WriteType.WITHOUT_RESPONSE
                 )
 
                 logger.debug {
