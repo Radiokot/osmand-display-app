@@ -10,9 +10,13 @@ import androidx.fragment.app.Fragment
  * Handles specified Android runtime permission.
  */
 class PermissionManager(
-    private val permission: String,
+    private val permissions: Array<String>,
     private val requestCode: Int
 ) {
+    constructor(
+        permission: String,
+        requestCode: Int,
+    ) : this(arrayOf(permission), requestCode)
 
     private var grantedCallback: (() -> Unit)? = null
     private var deniedCallback: (() -> Unit)? = null
@@ -26,13 +30,7 @@ class PermissionManager(
     fun check(activity: Activity, action: () -> Unit, deniedAction: () -> Unit) {
         this.grantedCallback = action
         this.deniedCallback = deniedAction
-        if (ContextCompat.checkSelfPermission(activity, permission) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            action()
-        } else {
-            ActivityCompat.requestPermissions(activity, arrayOf(permission), requestCode)
-        }
+        check(activity)
     }
 
     /**
@@ -42,12 +40,26 @@ class PermissionManager(
      */
     fun check(activity: Activity, action: () -> Unit) {
         this.grantedCallback = action
-        if (ContextCompat.checkSelfPermission(activity, permission) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            action()
+        check(activity)
+    }
+
+    fun check(activity: Activity) {
+        val deniedPermissions = permissions
+            .filter {
+                ContextCompat.checkSelfPermission(
+                    activity,
+                    it
+                ) == PackageManager.PERMISSION_DENIED
+            }
+
+        if (deniedPermissions.isEmpty()) {
+            grantedCallback?.invoke()
         } else {
-            ActivityCompat.requestPermissions(activity, arrayOf(permission), requestCode)
+            ActivityCompat.requestPermissions(
+                activity,
+                deniedPermissions.toTypedArray(),
+                requestCode
+            )
         }
     }
 
@@ -60,13 +72,7 @@ class PermissionManager(
     fun check(fragment: Fragment, action: () -> Unit, deniedAction: () -> Unit) {
         this.grantedCallback = action
         this.deniedCallback = deniedAction
-        if (ContextCompat.checkSelfPermission(fragment.requireContext(), permission) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            action()
-        } else {
-            fragment.requestPermissions(arrayOf(permission), requestCode)
-        }
+        check(fragment)
     }
 
     /**
@@ -76,12 +82,25 @@ class PermissionManager(
      */
     fun check(fragment: Fragment, action: () -> Unit) {
         this.grantedCallback = action
-        if (ContextCompat.checkSelfPermission(fragment.requireContext(), permission) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            action()
+        check(fragment)
+    }
+
+    private fun check(fragment: Fragment) {
+        val deniedPermissions = permissions
+            .filter {
+                ContextCompat.checkSelfPermission(
+                    fragment.requireContext(),
+                    it
+                ) == PackageManager.PERMISSION_DENIED
+            }
+
+        if (deniedPermissions.isEmpty()) {
+            grantedCallback?.invoke()
         } else {
-            fragment.requestPermissions(arrayOf(permission), requestCode)
+            fragment.requestPermissions(
+                deniedPermissions.toTypedArray(),
+                requestCode
+            )
         }
     }
 
@@ -90,11 +109,12 @@ class PermissionManager(
      * invokes corresponding action passed to the [check] method
      */
     fun handlePermissionResult(
-        requestCode: Int, permissions: Array<out String>,
+        requestCode: Int,
+        permissions: Array<out String>,
         grantResults: IntArray
     ) {
         if (requestCode == this.requestCode) {
-            if (isPermissionGranted(grantResults)) {
+            if (arePermissionsGranted(grantResults)) {
                 grantedCallback?.invoke()
             } else {
                 deniedCallback?.invoke()
@@ -102,8 +122,8 @@ class PermissionManager(
         }
     }
 
-    private fun isPermissionGranted(grantResults: IntArray): Boolean {
+    private fun arePermissionsGranted(grantResults: IntArray): Boolean {
         return grantResults.isNotEmpty()
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
     }
 }

@@ -67,8 +67,13 @@ class MainActivity : AppCompatActivity() {
         PermissionManager("android.permission.BLUETOOTH_CONNECT", 332)
     }
 
-    private val locationPermission: PermissionManager by lazy {
-        PermissionManager(Manifest.permission.ACCESS_FINE_LOCATION, 333)
+    private val locationAndBluetoothConnectPermission: PermissionManager by lazy {
+        PermissionManager(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                "android.permission.BLUETOOTH_CONNECT"
+            ), 333
+        )
     }
 
     private val commandSender: DisplayCommandSender
@@ -275,7 +280,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissionAndStartMapBroadcastingService() {
-        locationPermission.check(this, this::startMapBroadcastingService)
+        locationAndBluetoothConnectPermission.check(this, this::startMapBroadcastingService)
     }
 
     private fun startMapBroadcastingService() {
@@ -298,7 +303,11 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         bluetoothConnectPermission.handlePermissionResult(requestCode, permissions, grantResults)
-        locationPermission.handlePermissionResult(requestCode, permissions, grantResults)
+        locationAndBluetoothConnectPermission.handlePermissionResult(
+            requestCode,
+            permissions,
+            grantResults
+        )
     }
 
     override fun onDestroy() {
