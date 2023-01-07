@@ -214,7 +214,6 @@ class MapBroadcastingService : Service() {
                     CameraOptions.Builder()
                         .center(locationData.toPoint())
                         .zoom(14.5)
-                        .bearing(locationData.bearing.toDouble())
                         .build()
                 )
 
