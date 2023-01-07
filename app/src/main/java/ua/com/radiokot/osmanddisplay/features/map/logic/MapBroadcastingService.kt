@@ -9,6 +9,8 @@ import android.os.Bundle
 import android.os.IBinder
 import io.reactivex.disposables.CompositeDisposable
 import mu.KotlinLogging
+import org.koin.android.ext.android.get
+import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.NotificationChannelHelper
@@ -28,6 +30,21 @@ class MapBroadcastingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(NOTIFICATION_ID, createNotification())
+
+        val deviceAddress = requireNotNull(intent?.getStringExtra(DEVICE_ADDRESS_KEY)) {
+            "$DEVICE_ADDRESS_KEY extra must be set"
+        }
+
+        logger.debug {
+            "starting: " +
+                    "device_address=$deviceAddress"
+        }
+
+        commandSender = get {
+            parametersOf(deviceAddress)
+        }
+
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -61,8 +78,11 @@ class MapBroadcastingService : Service() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        logger.debug { "destroying" }
+
         compositeDisposable.dispose()
+
+        super.onDestroy()
     }
 
     companion object {

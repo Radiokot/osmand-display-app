@@ -43,7 +43,7 @@
             style="@style/TextAppearance.Material3.TitleMedium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/broadcasting_service" />
+            android:text="@string/directions_broadcasting_service" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,7 +52,7 @@
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/start_broadcasting_button"
+                android:id="@+id/start_directions_broadcasting_button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
@@ -62,7 +62,45 @@
                 app:iconGravity="textStart" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/stop_broadcasting_button"
+                android:id="@+id/stop_directions_broadcasting_button"
+                style="@style/Widget.Material3.Button.IconButton.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/stop_broadcasting"
+                app:icon="@drawable/ic_stop"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="24dp" />
+
+        <TextView
+            style="@style/TextAppearance.Material3.TitleMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/map_broadcasting_service" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/start_map_broadcasting_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="2"
+                android:text="@string/start_broadcasting"
+                app:icon="@drawable/ic_play_arrow"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/stop_map_broadcasting_button"
                 style="@style/Widget.Material3.Button.IconButton.Outlined"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
