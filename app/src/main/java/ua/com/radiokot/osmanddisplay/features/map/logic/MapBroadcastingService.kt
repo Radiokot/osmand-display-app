@@ -5,11 +5,20 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import com.mapbox.geojson.Point
 import com.mapbox.maps.*
+import com.mapbox.maps.extension.style.layers.addLayer
+import com.mapbox.maps.extension.style.layers.generated.symbolLayer
+import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor
+import com.mapbox.maps.extension.style.layers.properties.generated.SymbolPlacement
+import com.mapbox.maps.extension.style.sources.addSource
+import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
+import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
+import com.mapbox.maps.extension.style.sources.getSourceAs
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
@@ -31,6 +40,10 @@ class MapBroadcastingService : Service() {
     private lateinit var compositeDisposable: CompositeDisposable
 
     private val snapshotter: Snapshotter by inject { parametersOf(200f, 200f, this) }
+    private var mapStyle: Style? = null
+
+    private var locationLng = 35.0715
+    private var locationLat = 48.4573
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -55,17 +68,50 @@ class MapBroadcastingService : Service() {
             parametersOf(deviceAddress)
         }
 
+        snapshotter.setStyleListener(object : SnapshotStyleListener {
+            override fun onDidFinishLoadingStyle(style: Style) {
+                mapStyle = style
+
+                style.addImage(
+                    "me-circle",
+                    BitmapFactory.decodeResource(resources, R.drawable.me)
+                )
+
+                style.addSource(geoJsonSource("my-location"))
+
+                style.addLayer(symbolLayer("me-circle-layer", "my-location") {
+                    symbolPlacement(SymbolPlacement.POINT)
+                    iconImage("me-circle")
+                    iconAllowOverlap(true)
+                    iconIgnorePlacement(true)
+                    iconAnchor(IconAnchor.CENTER)
+                })
+
+                logger.debug { "snapshotter_style_extended" }
+            }
+        })
+
         captureAndSendMap()
 
         return super.onStartCommand(intent, flags, startId)
     }
 
     private fun captureAndSendMap() {
+        val mapStyle = this.mapStyle
+
+        if (mapStyle == null) {
+            logger.debug { "captureAndSendMap(): style_not_yet_loaded" }
+            return
+        }
+
+        mapStyle.getSourceAs<GeoJsonSource>("my-location")
+            ?.data("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[$locationLng,$locationLat]}}")
+
         snapshotter.apply {
             setCamera(
                 CameraOptions.Builder()
                     // TODO: Replace with the actual location
-                    .center(Point.fromLngLat(35.0715, 48.4573))
+                    .center(Point.fromLngLat(locationLng, locationLat))
                     .zoom(14.5)
                     .build()
             )
@@ -80,6 +126,9 @@ class MapBroadcastingService : Service() {
                 }
             }
         }
+
+        locationLng += 0.0001
+        locationLat += 0.0003
     }
 
     private fun sendMap(map: Bitmap) {
@@ -104,8 +153,10 @@ class MapBroadcastingService : Service() {
             }
             .subscribeBy(
                 onComplete = {
-                    logger.debug { "sendMap(): completed," +
-                            "\ntime=${System.currentTimeMillis() - startTime}" }
+                    logger.debug {
+                        "sendMap(): completed," +
+                                "\ntime=${System.currentTimeMillis() - startTime}"
+                    }
                 },
                 onError = {
                     logger.error(it) {
