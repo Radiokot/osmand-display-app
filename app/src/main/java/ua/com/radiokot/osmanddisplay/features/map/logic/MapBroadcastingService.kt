@@ -1,28 +1,25 @@
 package ua.com.radiokot.osmanddisplay.features.map.logic
 
 import android.app.Notification
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.os.Build
+import android.graphics.Canvas
 import android.os.Bundle
 import android.os.IBinder
+import androidx.core.app.NotificationCompat
 import com.mapbox.geojson.Point
 import com.mapbox.maps.*
-import com.mapbox.maps.extension.style.layers.addLayer
-import com.mapbox.maps.extension.style.layers.generated.symbolLayer
-import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor
-import com.mapbox.maps.extension.style.layers.properties.generated.SymbolPlacement
-import com.mapbox.maps.extension.style.sources.addSource
-import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
-import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
-import com.mapbox.maps.extension.style.sources.getSourceAs
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.rxkotlin.toSingle
 import io.reactivex.schedulers.Schedulers
 import mu.KotlinLogging
 import org.koin.android.ext.android.get
@@ -36,11 +33,17 @@ import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 class MapBroadcastingService : Service() {
     private val logger = KotlinLogging.logger("MapBcService@${hashCode()}")
 
+    private val notificationManager: NotificationManager by lazy {
+        getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+
     private lateinit var commandSender: DisplayCommandSender
     private lateinit var compositeDisposable: CompositeDisposable
 
     private val snapshotter: Snapshotter by inject { parametersOf(200f, 200f, this) }
-    private var mapStyle: Style? = null
+    private val locationMarker: Bitmap by lazy {
+        BitmapFactory.decodeResource(resources, R.drawable.me)
+    }
 
     private var locationLng = 35.0715
     private var locationLat = 48.4573
@@ -53,7 +56,7 @@ class MapBroadcastingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, createNotification())
+        startForeground(NOTIFICATION_ID, getNotification())
 
         val deviceAddress = requireNotNull(intent?.getStringExtra(DEVICE_ADDRESS_KEY)) {
             "$DEVICE_ADDRESS_KEY extra must be set"
@@ -70,24 +73,8 @@ class MapBroadcastingService : Service() {
 
         snapshotter.setStyleListener(object : SnapshotStyleListener {
             override fun onDidFinishLoadingStyle(style: Style) {
-                mapStyle = style
-
-                style.addImage(
-                    "me-circle",
-                    BitmapFactory.decodeResource(resources, R.drawable.me)
-                )
-
-                style.addSource(geoJsonSource("my-location"))
-
-                style.addLayer(symbolLayer("me-circle-layer", "my-location") {
-                    symbolPlacement(SymbolPlacement.POINT)
-                    iconImage("me-circle")
-                    iconAllowOverlap(true)
-                    iconIgnorePlacement(true)
-                    iconAnchor(IconAnchor.CENTER)
-                })
-
-                logger.debug { "snapshotter_style_extended" }
+                // TODO: Set track here.
+//                logger.debug { "snapshotter_style_extended" }
             }
         })
 
@@ -97,16 +84,6 @@ class MapBroadcastingService : Service() {
     }
 
     private fun captureAndSendMap() {
-        val mapStyle = this.mapStyle
-
-        if (mapStyle == null) {
-            logger.debug { "captureAndSendMap(): style_not_yet_loaded" }
-            return
-        }
-
-        mapStyle.getSourceAs<GeoJsonSource>("my-location")
-            ?.data("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[$locationLng,$locationLat]}}")
-
         snapshotter.apply {
             setCamera(
                 CameraOptions.Builder()
@@ -122,7 +99,7 @@ class MapBroadcastingService : Service() {
                     logger.debug { "captureAndSendMap(): snapshotter_not_ready" }
                 } else {
                     logger.debug { "captureAndSendMap(): got_snapshot" }
-                    sendMap(bitmap)
+                    processAndSendMap(bitmap)
                 }
             }
         }
@@ -131,25 +108,25 @@ class MapBroadcastingService : Service() {
         locationLat += 0.0003
     }
 
-    private fun sendMap(map: Bitmap) {
-        val scaledFrame = Bitmap.createScaledBitmap(map, 200, 200, false)
-        map.recycle()
-
+    private fun processAndSendMap(snapshot: Bitmap) {
         var startTime = 0L
+        lateinit var frameToSend: Bitmap
 
-        SendFrameUseCase(
-            frame = scaledFrame,
-            commandSender = commandSender
-        )
-            .perform()
+        resizeMapAndAddOverlay(snapshot)
+            .flatMapCompletable { frame ->
+                frameToSend = frame
+
+                SendFrameUseCase(
+                    frame = frame,
+                    commandSender = commandSender
+                )
+                    .perform()
+            }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
                 logger.debug { "sendMap(): started" }
                 startTime = System.currentTimeMillis()
-            }
-            .doOnTerminate {
-                scaledFrame.recycle()
             }
             .subscribeBy(
                 onComplete = {
@@ -157,8 +134,13 @@ class MapBroadcastingService : Service() {
                         "sendMap(): completed," +
                                 "\ntime=${System.currentTimeMillis() - startTime}"
                     }
+
+                    addSentFrameToNotification(frameToSend)
                 },
                 onError = {
+                    frameToSend.recycle()
+
+                    it.printStackTrace()
                     logger.error(it) {
                         "sendMap(): failed"
                     }
@@ -167,7 +149,22 @@ class MapBroadcastingService : Service() {
             .addTo(compositeDisposable)
     }
 
-    private fun createNotification(): Notification {
+    private fun resizeMapAndAddOverlay(map: Bitmap): Single<Bitmap> = {
+        val resizedMap = Bitmap.createScaledBitmap(map, 200, 200, false)
+        map.recycle()
+
+        val canvas = Canvas(resizedMap)
+        canvas.drawBitmap(
+            locationMarker,
+            (map.width - locationMarker.width) / 2f,
+            (map.height - locationMarker.height) / 2f,
+            null
+        )
+
+        resizedMap
+    }.toSingle()
+
+    private fun getNotification(frame: Bitmap? = null): Notification {
         val pendingIntent: PendingIntent =
             Intent(this, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -180,7 +177,7 @@ class MapBroadcastingService : Service() {
 
         NotificationChannelHelper.ensureBroadcastingNotificationChannel(this)
 
-        return Notification.Builder(
+        return NotificationCompat.Builder(
             this,
             NotificationChannelHelper.BROADCASTING_NOTIFICATION_CHANNEL_ID
         )
@@ -188,12 +185,24 @@ class MapBroadcastingService : Service() {
             .setContentText(getText(R.string.map_broadcasting_is_running))
             .setSmallIcon(R.drawable.ic_map)
             .setContentIntent(pendingIntent)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .setOngoing(true)
             .apply {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+                if (frame != null) {
+                    setLargeIcon(frame)
                 }
             }
             .build()
+    }
+
+    private var lastShownNotificationFrame: Bitmap? = null
+    private fun addSentFrameToNotification(frame: Bitmap) {
+        lastShownNotificationFrame?.recycle()
+        lastShownNotificationFrame = frame
+        notificationManager.notify(
+            NOTIFICATION_ID,
+            getNotification(frame)
+        )
     }
 
     override fun onDestroy() {
