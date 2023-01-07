@@ -47,7 +47,7 @@ class MapBroadcastingService : Service() {
     private lateinit var commandSender: DisplayCommandSender
     private lateinit var compositeDisposable: CompositeDisposable
 
-    private val snapshotter: Snapshotter by inject { parametersOf(200f, 200f, this) }
+    private val snapshotter: Snapshotter by inject { parametersOf(MAP_SIZE_DP, MAP_SIZE_DP, this) }
     private val locationMarker: Bitmap by lazy {
         BitmapFactory.decodeResource(resources, R.drawable.me)
     }
@@ -213,7 +213,7 @@ class MapBroadcastingService : Service() {
                 setCamera(
                     CameraOptions.Builder()
                         .center(locationData.toPoint())
-                        .zoom(14.5)
+                        .zoom(MAP_CAMERA_ZOOM)
                         .build()
                 )
 
@@ -241,8 +241,8 @@ class MapBroadcastingService : Service() {
         val canvas = Canvas(resizedMap)
         canvas.drawBitmap(
             locationMarker,
-            (map.width - locationMarker.width) / 2f,
-            (map.height - locationMarker.height) / 2f,
+            (resizedMap.width - locationMarker.width) / 2f,
+            (resizedMap.height - locationMarker.height) / 2f,
             null
         )
 
@@ -303,6 +303,8 @@ class MapBroadcastingService : Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 2
+        private const val MAP_CAMERA_ZOOM = 15.0
+        private const val MAP_SIZE_DP = 230
 
         private const val DEVICE_ADDRESS_KEY = "device_address"
 
