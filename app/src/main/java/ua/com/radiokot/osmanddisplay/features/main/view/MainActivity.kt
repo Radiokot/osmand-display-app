@@ -27,7 +27,7 @@ import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.util.PermissionManager
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
-import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.BroadcastingService
+import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DirectionsBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
@@ -237,15 +237,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startBroadcastingService() {
-        val intent = Intent(this, BroadcastingService::class.java)
+        val intent = Intent(this, DirectionsBroadcastingService::class.java)
             .apply {
-                putExtras(BroadcastingService.getBundle(selectedDeviceAddress!!))
+                putExtras(DirectionsBroadcastingService.getBundle(selectedDeviceAddress!!))
             }
         startForegroundService(intent)
     }
 
     private fun stopBroadcastingService() {
-        val intent = Intent(this, BroadcastingService::class.java)
+        val intent = Intent(this, DirectionsBroadcastingService::class.java)
         stopService(intent)
     }
 

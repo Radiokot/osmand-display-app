@@ -1,7 +1,6 @@
 package ua.com.radiokot.osmanddisplay.features.broadcasting.logic
 
 import android.app.*
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -26,7 +25,7 @@ import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
-class BroadcastingService : Service(), OsmAndServiceConnectionListener {
+class DirectionsBroadcastingService : Service(), OsmAndServiceConnectionListener {
     sealed class Status {
         object Created : Status()
         object OsmAndBind : Status()
@@ -280,12 +279,15 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
                     )
                 }
 
-        ensureNotificationChannel()
+        NotificationChannelHelper.ensureBroadcastingNotificationChannel(this)
 
-        return Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+        return Notification.Builder(
+            this,
+            NotificationChannelHelper.BROADCASTING_NOTIFICATION_CHANNEL_ID
+        )
             .setContentTitle(getString(R.string.app_name))
-            .setContentText(getText(R.string.broadcasting_is_running))
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentText(getText(R.string.directions_broadcasting_is_running))
+            .setSmallIcon(R.drawable.ic_directions)
             .setContentIntent(pendingIntent)
             .apply {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -293,19 +295,6 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
                 }
             }
             .build()
-    }
-
-    private fun ensureNotificationChannel() {
-        val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        notificationManager.createNotificationChannel(
-            NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                getString(R.string.broadcasting_notifications),
-                NotificationManager.IMPORTANCE_LOW,
-            )
-        )
     }
 
     override fun onDestroy() {
@@ -318,7 +307,6 @@ class BroadcastingService : Service(), OsmAndServiceConnectionListener {
     }
 
     companion object {
-        private const val NOTIFICATION_CHANNEL_ID = "service"
         private const val NOTIFICATION_ID = 1
 
         private const val DEVICE_ADDRESS_KEY = "device_address"

@@ -8,7 +8,8 @@
     <string name="scanning_for_devices">Scanning for devices…</string>
     <string name="scan_failed">Scan failed</string>
     <string name="broadcasting_service">Broadcasting</string>
-    <string name="broadcasting_is_running">Broadcasting is running</string>
+    <string name="directions_broadcasting_is_running">Directions broadcasting is running</string>
+    <string name="map_broadcasting_is_running">Map broadcasting is running</string>
     <string name="broadcasting_notifications">Broadcasting</string>
     <string name="start_broadcasting">Start</string>
     <string name="stop_broadcasting">Stop</string>
