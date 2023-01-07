@@ -15,15 +15,18 @@ import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.*
-import com.mapbox.geojson.Point
 import com.mapbox.maps.*
+import io.reactivex.BackpressureStrategy
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.rxkotlin.toSingle
 import io.reactivex.schedulers.Schedulers
+import io.reactivex.subjects.PublishSubject
+import io.reactivex.subjects.Subject
 import mu.KotlinLogging
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
@@ -32,6 +35,7 @@ import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.NotificationChannelHelper
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
+import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 
 class MapBroadcastingService : Service() {
     private val logger = KotlinLogging.logger("MapBcService@${hashCode()}")
@@ -49,31 +53,30 @@ class MapBroadcastingService : Service() {
     }
 
     private val locationClient: FusedLocationProviderClient by inject()
+
     private val locationRequest = LocationRequest.Builder(10000)
         .setMinUpdateIntervalMillis(10000)
         .setMaxUpdateDelayMillis(30000)
-        .setMinUpdateDistanceMeters(1f)
+        .setMinUpdateDistanceMeters(2f)
         .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
         .build()
+
     private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(location: LocationResult) {
-            location.lastLocation?.also {
+        override fun onLocationResult(locationResult: LocationResult) {
+            locationResult.lastLocation?.also { lastLocation ->
                 logger.debug {
                     "onLocationResult(): received_location:" +
-                            "\nlng=${it.longitude}," +
-                            "\nlat=${it.latitude}"
+                            "\nlng=${lastLocation.longitude}," +
+                            "\nlat=${lastLocation.latitude}"
                 }
-                // TODO: Speed is possible
-                locationLng = it.longitude
-                locationLat = it.latitude
 
-                captureAndSendMap()
+                // TODO: Speed & bearing.
+                locationsSubject.onNext(LocationData(lastLocation))
             }
         }
     }
 
-    private var locationLng = 35.0715
-    private var locationLat = 48.4573
+    private val locationsSubject: Subject<LocationData> = PublishSubject.create()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -83,6 +86,8 @@ class MapBroadcastingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+
         startForeground(NOTIFICATION_ID, getNotification())
 
         val deviceAddress = requireNotNull(intent?.getStringExtra(DEVICE_ADDRESS_KEY)) {
@@ -90,8 +95,8 @@ class MapBroadcastingService : Service() {
         }
 
         logger.debug {
-            "starting: " +
-                    "device_address=$deviceAddress"
+            "onStartCommand(): starting:" +
+                    "\ndevice_address=$deviceAddress"
         }
 
         commandSender = get {
@@ -105,13 +110,15 @@ class MapBroadcastingService : Service() {
             }
         })
 
-        subscribeToLocationUpdates()
+        requestLocationUpdates()
 
-        return super.onStartCommand(intent, flags, startId)
+        subscribeToLocations()
+
+        return START_NOT_STICKY
     }
 
     @SuppressLint("MissingPermission")
-    private fun subscribeToLocationUpdates() {
+    private fun requestLocationUpdates() {
         try {
             locationClient.requestLocationUpdates(
                 locationRequest,
@@ -122,76 +129,113 @@ class MapBroadcastingService : Service() {
             logger.debug(e) {
                 "subscribeToLocationUpdates(): failed"
             }
+            // TODO: Remove once the logger is fixed.
+            e.printStackTrace()
         }
     }
 
-    private fun captureAndSendMap() {
-        snapshotter.apply {
-            setCamera(
-                CameraOptions.Builder()
-                    // TODO: Replace with the actual location
-                    .center(Point.fromLngLat(locationLng, locationLat))
-                    .zoom(14.5)
-                    .build()
-            )
-
-            start { snapshot ->
-                val bitmap = snapshot?.bitmap()
-                if (bitmap == null) {
-                    logger.debug { "captureAndSendMap(): snapshotter_not_ready" }
-                } else {
-                    logger.debug { "captureAndSendMap(): got_snapshot" }
-                    processAndSendMap(bitmap)
-                }
-            }
-        }
-
-        locationLng += 0.0001
-        locationLat += 0.0003
-    }
-
-    private fun processAndSendMap(snapshot: Bitmap) {
-        var startTime = 0L
+    private var locationsDisposable: Disposable? = null
+    private fun subscribeToLocations() {
+        var sendStartTime = 0L
         lateinit var frameToSend: Bitmap
 
-        resizeMapAndAddOverlay(snapshot)
-            .flatMapCompletable { frame ->
-                frameToSend = frame
+        locationsDisposable?.dispose()
+        locationsDisposable = locationsSubject
 
-                SendFrameUseCase(
-                    frame = frame,
-                    commandSender = commandSender
-                )
-                    .perform()
+            // Backpressure dropping strategy is set to eliminate queueing of outdated locations.
+            .toFlowable(BackpressureStrategy.LATEST)
+
+            // Buffer size is set to 1 to eliminate queueing of outdated locations.
+            .observeOn(Schedulers.io(), false, 1)
+
+            // Concurrency factor of 1 for this flatMap is essential.
+            // Otherwise it creates multiple subscriptions waiting for the ending
+            // in parallel, which breaks backpressure.
+            .flatMapSingle({ location ->
+                getMapSnapshot(location)
+                    .observeOn(Schedulers.io())
+                    .flatMap { snapshot ->
+                        composeFrame(snapshot)
+                            .doOnSuccess {
+                                logger.debug {
+                                    "subscribeToLocations(): frame_composed:" +
+                                            "\nlocation=$location"
+                                }
+                            }
+                    }
+                    .flatMap { frame ->
+                        frameToSend = frame
+
+                        SendFrameUseCase(
+                            frame = frame,
+                            commandSender = commandSender
+                        )
+                            .perform()
+                            .toSingleDefault(frame to location)
+                            .doOnSubscribe {
+                                logger.debug {
+                                    "subscribeToLocations(): subscribed_to_frame_sending:" +
+                                            "\nlocation=$location"
+                                }
+                                sendStartTime = System.currentTimeMillis()
+                            }
+                    }
+            }, false, 1)
+            .doOnSubscribe {
+                logger.debug { "subscribeToLocations(): subscribed" }
             }
             .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe {
-                logger.debug { "sendMap(): started" }
-                startTime = System.currentTimeMillis()
-            }
             .subscribeBy(
-                onComplete = {
+                onNext = { (sentFrame, location) ->
                     logger.debug {
-                        "sendMap(): completed," +
-                                "\ntime=${System.currentTimeMillis() - startTime}"
+                        "subscribeToLocations(): frame_sent," +
+                                "\ntime=${System.currentTimeMillis() - sendStartTime}," +
+                                "\nlocation=$location"
                     }
 
-                    addSentFrameToNotification(frameToSend)
+                    addSentFrameToNotification(sentFrame)
                 },
                 onError = {
-                    frameToSend.recycle()
-
+                    logger.error(it) { "subscribeToLocations(): error_occurred" }
+                    // TODO: Remove once the logger is fixed.
                     it.printStackTrace()
-                    logger.error(it) {
-                        "sendMap(): failed"
-                    }
+
+                    frameToSend.recycle()
+                    subscribeToLocations()
                 }
             )
             .addTo(compositeDisposable)
     }
 
-    private fun resizeMapAndAddOverlay(map: Bitmap): Single<Bitmap> = {
+    private fun getMapSnapshot(locationData: LocationData): Single<Bitmap> =
+        Single.create { emitter ->
+            snapshotter.apply {
+                setCamera(
+                    CameraOptions.Builder()
+                        .center(locationData.toPoint())
+                        .zoom(14.5)
+                        .bearing(locationData.bearing.toDouble())
+                        .build()
+                )
+
+                start { snapshot ->
+                    val bitmap = snapshot?.bitmap()
+                    if (bitmap == null) {
+                        logger.debug { "captureAndSendMap(): snapshotter_not_ready" }
+
+                        emitter.tryOnError(RuntimeException("Snapshotter is not ready"))
+                    } else {
+                        logger.debug { "captureAndSendMap(): got_snapshot" }
+
+                        emitter.onSuccess(bitmap)
+                    }
+                }
+            }
+        }
+            // Important for Snapshotter.
+            .subscribeOn(AndroidSchedulers.mainThread())
+
+    private fun composeFrame(map: Bitmap): Single<Bitmap> = {
         val resizedMap = Bitmap.createScaledBitmap(map, 200, 200, false)
         map.recycle()
 
