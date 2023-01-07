@@ -4,14 +4,19 @@ import android.app.Activity
 import android.companion.CompanionDeviceManager
 import android.content.Context
 import android.content.SharedPreferences
+import android.location.LocationManager
 import android.os.Handler
 import android.os.Looper
+import androidx.core.location.LocationManagerCompat
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.mapbox.maps.*
 import com.welie.blessed.BluetoothCentralManager
 import com.welie.blessed.BluetoothCentralManagerCallback
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
@@ -129,6 +134,13 @@ val injectionModules: List<Module> = listOf(
             Snapshotter(context, options, overlayOptions).apply {
                 setStyleUri(getProperty("mapStyleUri"))
             }
+        }
+    },
+
+    // Location
+    module {
+        factory {
+            LocationServices.getFusedLocationProviderClient(androidContext())
         }
     },
 )

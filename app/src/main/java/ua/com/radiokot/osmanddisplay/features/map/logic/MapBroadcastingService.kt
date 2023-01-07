@@ -1,5 +1,6 @@
 package ua.com.radiokot.osmanddisplay.features.map.logic
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -11,7 +12,9 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.os.Bundle
 import android.os.IBinder
+import android.os.Looper
 import androidx.core.app.NotificationCompat
+import com.google.android.gms.location.*
 import com.mapbox.geojson.Point
 import com.mapbox.maps.*
 import io.reactivex.Single
@@ -43,6 +46,30 @@ class MapBroadcastingService : Service() {
     private val snapshotter: Snapshotter by inject { parametersOf(200f, 200f, this) }
     private val locationMarker: Bitmap by lazy {
         BitmapFactory.decodeResource(resources, R.drawable.me)
+    }
+
+    private val locationClient: FusedLocationProviderClient by inject()
+    private val locationRequest = LocationRequest.Builder(10000)
+        .setMinUpdateIntervalMillis(10000)
+        .setMaxUpdateDelayMillis(30000)
+        .setMinUpdateDistanceMeters(1f)
+        .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+        .build()
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(location: LocationResult) {
+            location.lastLocation?.also {
+                logger.debug {
+                    "onLocationResult(): received_location:" +
+                            "\nlng=${it.longitude}," +
+                            "\nlat=${it.latitude}"
+                }
+                // TODO: Speed is possible
+                locationLng = it.longitude
+                locationLat = it.latitude
+
+                captureAndSendMap()
+            }
+        }
     }
 
     private var locationLng = 35.0715
@@ -78,9 +105,24 @@ class MapBroadcastingService : Service() {
             }
         })
 
-        captureAndSendMap()
+        subscribeToLocationUpdates()
 
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun subscribeToLocationUpdates() {
+        try {
+            locationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                Looper.getMainLooper()
+            )
+        } catch (e: Exception) {
+            logger.debug(e) {
+                "subscribeToLocationUpdates(): failed"
+            }
+        }
     }
 
     private fun captureAndSendMap() {
@@ -211,6 +253,7 @@ class MapBroadcastingService : Service() {
         compositeDisposable.dispose()
         snapshotter.cancel()
         snapshotter.destroy()
+        locationClient.removeLocationUpdates(locationCallback)
 
         super.onDestroy()
     }
