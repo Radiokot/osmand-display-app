@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.text.format.DateUtils
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.elevation.SurfaceColors
@@ -21,6 +22,7 @@ import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.extension.style.style
 import com.mapbox.maps.plugin.scalebar.scalebar
+import io.reactivex.Single.timer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
@@ -271,7 +273,11 @@ class MapActivity : AppCompatActivity() {
             .perform()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe {
+                runOnUiThread { onBitmapCapturingStarted() }
+            }
             .doOnTerminate {
+                runOnUiThread { onBitmapCapturingTerminated() }
                 bitmap.recycle()
             }
             .subscribeBy(
@@ -282,6 +288,18 @@ class MapActivity : AppCompatActivity() {
                 }
             )
             .addTo(compositeDisposable)
+    }
+
+    private var startTime = 0L
+    private fun onBitmapCapturingStarted() {
+        capture_and_send_bitmap_button.isEnabled = false
+        startTime = System.currentTimeMillis()
+    }
+
+    private fun onBitmapCapturingTerminated() {
+        capture_and_send_bitmap_button.isEnabled = true
+        val elapsed = System.currentTimeMillis() - startTime
+        elapsed_time_text_view.text = elapsed.toString()
     }
 
     override fun onDestroy() {
