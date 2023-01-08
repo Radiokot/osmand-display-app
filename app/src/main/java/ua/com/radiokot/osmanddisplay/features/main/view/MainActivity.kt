@@ -1,5 +1,6 @@
 package ua.com.radiokot.osmanddisplay.features.main.view
 
+import android.Manifest
 import android.app.Activity
 import android.bluetooth.le.ScanResult
 import android.companion.CompanionDeviceManager
@@ -27,11 +28,13 @@ import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.util.PermissionManager
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
-import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.BroadcastingService
+import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DirectionsBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
+import ua.com.radiokot.osmanddisplay.features.map.logic.MapBroadcastingService
+import ua.com.radiokot.osmanddisplay.features.map.view.MapActivity
 
 class MainActivity : AppCompatActivity() {
     sealed class SelectedDevice {
@@ -64,6 +67,15 @@ class MainActivity : AppCompatActivity() {
         PermissionManager("android.permission.BLUETOOTH_CONNECT", 332)
     }
 
+    private val locationAndBluetoothConnectPermission: PermissionManager by lazy {
+        PermissionManager(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                "android.permission.BLUETOOTH_CONNECT"
+            ), 333
+        )
+    }
+
     private val commandSender: DisplayCommandSender
         get() = get { parametersOf(selectedDeviceAddress!!) }
 
@@ -87,12 +99,20 @@ class MainActivity : AppCompatActivity() {
             scanAndSelectDevice()
         }
 
-        start_broadcasting_button.setOnClickListener {
-            checkPermissionAndStartBroadcastingService()
+        start_directions_broadcasting_button.setOnClickListener {
+            checkPermissionAndStartDirectionsBroadcastingService()
         }
 
-        stop_broadcasting_button.setOnClickListener {
-            stopBroadcastingService()
+        stop_directions_broadcasting_button.setOnClickListener {
+            stopDirectionsBroadcastingService()
+        }
+
+        start_map_broadcasting_button.setOnClickListener {
+            checkPermissionAndStartMapBroadcastingService()
+        }
+
+        stop_map_broadcasting_button.setOnClickListener {
+            stopMapBroadcastingService()
         }
 
         send_random_direction_button.setOnClickListener {
@@ -106,6 +126,28 @@ class MainActivity : AppCompatActivity() {
         open_osm_and_button.setOnClickListener {
             openOsmAnd()
         }
+
+        open_map_button.setOnClickListener {
+            openMap()
+        }
+
+        selectedDevice
+            .observe(this) { selectedDevice ->
+                when (selectedDevice) {
+                    SelectedDevice.Nothing -> {
+                        start_directions_broadcasting_button.isEnabled = false
+                        start_map_broadcasting_button.isEnabled = false
+                        send_random_direction_button.isEnabled = false
+                        clear_screen_button.isEnabled = false
+                    }
+                    is SelectedDevice.Selected -> {
+                        start_directions_broadcasting_button.isEnabled = true
+                        start_map_broadcasting_button.isEnabled = true
+                        send_random_direction_button.isEnabled = true
+                        clear_screen_button.isEnabled = true
+                    }
+                }
+            }
     }
 
     private val turnTypes = setOf(1, 2, 3, 4, 5, 6, 7, 10, 11)
@@ -146,6 +188,13 @@ class MainActivity : AppCompatActivity() {
     private fun openOsmAnd() {
         packageManager.getLaunchIntentForPackage(getKoin().getProperty("osmAndPackage")!!)
             ?.also(this::startActivity)
+    }
+
+    private fun openMap() {
+        startActivity(
+            Intent(this, MapActivity::class.java)
+                .putExtras(MapActivity.getBundle(selectedDeviceAddress))
+        )
     }
 
     private var scanAndSelectDisposable: Disposable? = null
@@ -196,9 +245,6 @@ class MainActivity : AppCompatActivity() {
                 when (selectedDevice) {
                     SelectedDevice.Nothing -> {
                         selected_device_text_view.text = getString(R.string.no_display_selected)
-                        start_broadcasting_button.isEnabled = false
-                        send_random_direction_button.isEnabled = false
-                        clear_screen_button.isEnabled = false
                     }
                     is SelectedDevice.Selected -> {
                         selected_device_text_view.text =
@@ -207,33 +253,46 @@ class MainActivity : AppCompatActivity() {
                                 selectedDevice.name ?: getString(R.string.device_no_name),
                                 selectedDevice.address
                             )
-
-                        start_broadcasting_button.isEnabled = true
-                        send_random_direction_button.isEnabled = true
-                        clear_screen_button.isEnabled = true
                     }
                 }
             }
     }
 
-    private fun checkPermissionAndStartBroadcastingService() {
+    private fun checkPermissionAndStartDirectionsBroadcastingService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            bluetoothConnectPermission.check(this, this::startBroadcastingService)
+            bluetoothConnectPermission.check(this, this::startDirectionsBroadcastingService)
         } else {
-            startBroadcastingService()
+            startDirectionsBroadcastingService()
         }
     }
 
-    private fun startBroadcastingService() {
-        val intent = Intent(this, BroadcastingService::class.java)
+    private fun startDirectionsBroadcastingService() {
+        val intent = Intent(this, DirectionsBroadcastingService::class.java)
             .apply {
-                putExtras(BroadcastingService.getBundle(selectedDeviceAddress!!))
+                putExtras(DirectionsBroadcastingService.getBundle(selectedDeviceAddress!!))
             }
         startForegroundService(intent)
     }
 
-    private fun stopBroadcastingService() {
-        val intent = Intent(this, BroadcastingService::class.java)
+    private fun stopDirectionsBroadcastingService() {
+        val intent = Intent(this, DirectionsBroadcastingService::class.java)
+        stopService(intent)
+    }
+
+    private fun checkPermissionAndStartMapBroadcastingService() {
+        locationAndBluetoothConnectPermission.check(this, this::startMapBroadcastingService)
+    }
+
+    private fun startMapBroadcastingService() {
+        val intent = Intent(this, MapBroadcastingService::class.java)
+            .apply {
+                putExtras(MapBroadcastingService.getBundle(selectedDeviceAddress!!))
+            }
+        startForegroundService(intent)
+    }
+
+    private fun stopMapBroadcastingService() {
+        val intent = Intent(this, MapBroadcastingService::class.java)
         stopService(intent)
     }
 
@@ -244,6 +303,11 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         bluetoothConnectPermission.handlePermissionResult(requestCode, permissions, grantResults)
+        locationAndBluetoothConnectPermission.handlePermissionResult(
+            requestCode,
+            permissions,
+            grantResults
+        )
     }
 
     override fun onDestroy() {

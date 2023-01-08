@@ -5,6 +5,13 @@ pluginManagement {
         mavenCentral()
     }
 }
+
+def keystorePropertiesFile = file("app/keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -13,6 +20,21 @@ dependencyResolutionManagement {
             url = "https://builder.osmand.net"
             patternLayout {
                 artifact "ivy/[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]"
+            }
+        }
+        maven {
+            url 'https://api.mapbox.com/downloads/v2/releases/maven'
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                // This should always be `mapbox` (not your username).
+                username = "mapbox"
+                if (keystoreProperties['mapboxSecretToken'] != null) {
+                    password = keystoreProperties['mapboxSecretToken']
+                } else {
+                    throw new GradleException("mapboxSecretToken is required to use the Mapbox SDK")
+                }
             }
         }
         maven { url 'https://jitpack.io' }
