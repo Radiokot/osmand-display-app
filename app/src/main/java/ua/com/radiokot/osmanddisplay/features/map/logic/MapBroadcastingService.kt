@@ -58,7 +58,7 @@ class MapBroadcastingService : Service() {
 
     private val locationRequest = LocationRequest.Builder(8000)
         .setMinUpdateIntervalMillis(8000)
-        .setMaxUpdateDelayMillis(30000)
+        .setMaxUpdateDelayMillis(20000)
         .setMinUpdateDistanceMeters(2f)
         .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
         .build()
@@ -323,7 +323,7 @@ class MapBroadcastingService : Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 2
-        private const val MAP_CAMERA_ZOOM = 15.0
+        private const val MAP_CAMERA_ZOOM = 15.3
         private const val MAP_SIZE_DP = 230
 
         private const val DEVICE_ADDRESS_KEY = "device_address"
