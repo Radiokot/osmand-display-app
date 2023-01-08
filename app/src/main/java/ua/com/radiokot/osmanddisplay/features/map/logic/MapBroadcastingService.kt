@@ -7,9 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
+import android.graphics.*
 import android.location.Location
 import android.os.Bundle
 import android.os.IBinder
@@ -38,6 +36,8 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.NotificationCha
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 import java.util.*
+import kotlin.math.cos
+import kotlin.math.sin
 
 class MapBroadcastingService : Service() {
     private val logger = KotlinLogging.logger("MapBcService@${hashCode()}")
@@ -150,7 +150,6 @@ class MapBroadcastingService : Service() {
                     "\nlocation=${location}"
         }
 
-        // TODO: Speed & bearing.
         locationsSubject.onNext(LocationData(location))
     }
 
@@ -175,7 +174,10 @@ class MapBroadcastingService : Service() {
                 getMapSnapshot(location)
                     .observeOn(Schedulers.io())
                     .flatMap { snapshot ->
-                        composeFrame(snapshot)
+                        composeFrame(
+                            snapshot = snapshot,
+                            bearing = location.bearing,
+                        )
                             .doOnSuccess {
                                 logger.debug {
                                     "subscribeToLocations(): frame_composed:" +
@@ -254,16 +256,38 @@ class MapBroadcastingService : Service() {
             // Important for Snapshotter.
             .subscribeOn(AndroidSchedulers.mainThread())
 
-    private fun composeFrame(map: Bitmap): Single<Bitmap> = {
-        val resizedMap = Bitmap.createScaledBitmap(map, 200, 200, false)
-        map.recycle()
+    private fun composeFrame(
+        snapshot: Bitmap,
+        bearing: Float
+    ): Single<Bitmap> = {
+        val resizedMap = Bitmap.createScaledBitmap(snapshot, 200, 200, false)
+        snapshot.recycle()
 
         val canvas = Canvas(resizedMap)
+        val centerX = canvas.width / 2f
+        val centerY = canvas.height / 2f
+
+        // Draw the location marker, which is always in the center.
         canvas.drawBitmap(
             locationMarker,
-            (resizedMap.width - locationMarker.width) / 2f,
-            (resizedMap.height - locationMarker.height) / 2f,
+            centerX - locationMarker.width / 2f,
+            centerY - locationMarker.height / 2f,
             null
+        )
+
+        // Draw the bearing indicator as a line pointing from the center.
+        val bearingCircleRadius = 10f
+        val bearingLineWidth = 5f
+        canvas.drawLine(
+            centerX,
+            centerY,
+            centerX + bearingCircleRadius * sin(bearing),
+            // Subtract the Y coordinate as canvas Y axis is top-to-bottom.
+            centerY - bearingCircleRadius * cos(bearing),
+            Paint().apply {
+                color = Color.BLACK
+                strokeWidth = bearingLineWidth
+            }
         )
 
         resizedMap
