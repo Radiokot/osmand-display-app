@@ -56,8 +56,8 @@ class MapBroadcastingService : Service() {
 
     private val locationClient: FusedLocationProviderClient by inject()
 
-    private val locationRequest = LocationRequest.Builder(10000)
-        .setMinUpdateIntervalMillis(10000)
+    private val locationRequest = LocationRequest.Builder(8000)
+        .setMinUpdateIntervalMillis(8000)
         .setMaxUpdateDelayMillis(30000)
         .setMinUpdateDistanceMeters(2f)
         .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
