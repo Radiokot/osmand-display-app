@@ -10,6 +10,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.location.Location
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Looper
@@ -36,6 +37,7 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandS
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.NotificationChannelHelper
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
+import java.util.*
 
 class MapBroadcastingService : Service() {
     private val logger = KotlinLogging.logger("MapBcService@${hashCode()}")
@@ -63,16 +65,8 @@ class MapBroadcastingService : Service() {
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            locationResult.lastLocation?.also { lastLocation ->
-                logger.debug {
-                    "onLocationResult(): received_location:" +
-                            "\nlng=${lastLocation.longitude}," +
-                            "\nlat=${lastLocation.latitude}"
-                }
-
-                // TODO: Speed & bearing.
-                locationsSubject.onNext(LocationData(lastLocation))
-            }
+            locationResult.lastLocation
+                ?.also(this@MapBroadcastingService::onNewLocationFromClient)
         }
     }
 
@@ -111,6 +105,7 @@ class MapBroadcastingService : Service() {
         })
 
         requestLocationUpdates()
+        publishCurrentLocation()
 
         subscribeToLocations()
 
@@ -132,6 +127,31 @@ class MapBroadcastingService : Service() {
             // TODO: Remove once the logger is fixed.
             e.printStackTrace()
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun publishCurrentLocation() {
+        try {
+            locationClient.lastLocation.addOnSuccessListener { lastLocation: Location? ->
+                lastLocation?.also(this::onNewLocationFromClient)
+            }
+        } catch (e: Exception) {
+            logger.debug(e) {
+                "publishCurrentLocation(): failed"
+            }
+            // TODO: Remove once the logger is fixed.
+            e.printStackTrace()
+        }
+    }
+
+    private fun onNewLocationFromClient(location: Location) {
+        logger.debug {
+            "onLocationResult(): received_location:" +
+                    "\nlocation=${location}"
+        }
+
+        // TODO: Speed & bearing.
+        locationsSubject.onNext(LocationData(location))
     }
 
     private var locationsDisposable: Disposable? = null
