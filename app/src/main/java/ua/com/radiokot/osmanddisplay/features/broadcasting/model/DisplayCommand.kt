@@ -10,7 +10,7 @@ sealed class DisplayCommand(
      * Whether an acknowledgment from the device
      * is required for the sent command to be considered successful
      */
-    val requiresAcq: Boolean = false
+    val requiresAcq: Boolean = true
 ) {
     abstract fun toByteArray(): ByteArray
 
@@ -38,11 +38,11 @@ sealed class DisplayCommand(
         override fun toByteArray(): ByteArray = byteArrayOf(code)
     }
 
-    object FramePrepare : DisplayCommand(0x30, requiresAcq = true) {
+    object FramePrepare : DisplayCommand(0x30) {
         override fun toByteArray(): ByteArray = byteArrayOf(code)
     }
 
-    class FrameData(val data: ByteArray) : DisplayCommand(0x31) {
+    class FrameData(val data: ByteArray) : DisplayCommand(0x31, requiresAcq = false) {
         init {
             require(data.size <= MAX_DATA_SIZE) {
                 "Data can't be bigger than $MAX_DATA_SIZE bytes"

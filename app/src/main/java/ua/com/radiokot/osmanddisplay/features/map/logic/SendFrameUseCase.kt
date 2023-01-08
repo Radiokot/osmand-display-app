@@ -86,6 +86,6 @@ class SendFrameUseCase(
         commandSender
             .send(DisplayCommand.FrameShow)
             // Delay required for the frame to be shown.
-            .delay(1900, TimeUnit.MILLISECONDS, Schedulers.io())
+            .delay(2200, TimeUnit.MILLISECONDS, Schedulers.io())
             .toSingleDefault(true)
 }
