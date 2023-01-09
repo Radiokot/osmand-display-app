@@ -110,10 +110,8 @@ class MapBroadcastingService : Service() {
             )
         } catch (e: Exception) {
             logger.debug(e) {
-                "subscribeToLocationUpdates(): failed"
+                "subscribeToLocationUpdates(): error_occurred"
             }
-            // TODO: Remove once the logger is fixed.
-            e.printStackTrace()
         }
     }
 
@@ -125,10 +123,8 @@ class MapBroadcastingService : Service() {
             }
         } catch (e: Exception) {
             logger.debug(e) {
-                "publishCurrentLocation(): failed"
+                "publishCurrentLocation(): error_occurred"
             }
-            // TODO: Remove once the logger is fixed.
-            e.printStackTrace()
         }
     }
 
@@ -201,8 +197,6 @@ class MapBroadcastingService : Service() {
                 },
                 onError = {
                     logger.error(it) { "subscribeToLocations(): error_occurred" }
-                    // TODO: Remove once the logger is fixed.
-                    it.printStackTrace()
 
                     frameToSend?.recycle()
                     subscribeToLocations()
