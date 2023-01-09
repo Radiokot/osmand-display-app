@@ -14,3 +14,4 @@ The communication is done over the BLE serial.
 - OsmAnd AIDL interface
 - Mapbox map SDK
 - BLESSED BLE library
+- kotlin-logging with slf4j-handroid
