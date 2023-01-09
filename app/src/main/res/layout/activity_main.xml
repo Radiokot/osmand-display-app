@@ -146,11 +146,27 @@
             app:icon="@drawable/ic_clear" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/open_map_button"
+            android:id="@+id/capture_map_frame_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/open_map"
+            android:text="@string/capture_map_frame"
             app:icon="@drawable/ic_map" />
+
+        <ImageView
+            android:id="@+id/map_frame_image_view"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_marginTop="8dp"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY"
+            android:visibility="gone"
+            tools:background="@android:color/darker_gray"
+            tools:visibility="visible" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="24dp" />
+
     </LinearLayout>
 </ScrollView>

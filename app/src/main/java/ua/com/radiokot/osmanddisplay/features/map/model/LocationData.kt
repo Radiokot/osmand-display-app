@@ -6,7 +6,7 @@ import com.mapbox.geojson.Point
 data class LocationData(
     val lng: Double,
     val lat: Double,
-    val bearing: Float,
+    val bearing: Float?,
 ) {
     constructor(location: Location) : this(
         lng = location.longitude,

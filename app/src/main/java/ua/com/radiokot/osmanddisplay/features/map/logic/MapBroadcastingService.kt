@@ -16,13 +16,10 @@ import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.*
 import com.mapbox.maps.*
 import io.reactivex.BackpressureStrategy
-import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.rxkotlin.toSingle
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
@@ -36,8 +33,7 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.NotificationCha
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 import java.util.*
-import kotlin.math.cos
-import kotlin.math.sin
+import java.util.concurrent.TimeUnit
 
 class MapBroadcastingService : Service() {
     private val logger = KotlinLogging.logger("MapBcService@${hashCode()}")
@@ -49,10 +45,8 @@ class MapBroadcastingService : Service() {
     private lateinit var commandSender: DisplayCommandSender
     private lateinit var compositeDisposable: CompositeDisposable
 
-    private val snapshotter: Snapshotter by inject { parametersOf(MAP_SIZE_DP, MAP_SIZE_DP, this) }
-    private val locationMarker: Bitmap by lazy {
-        BitmapFactory.decodeResource(resources, R.drawable.me)
-    }
+    // Needs to be injected in the main thread.
+    private lateinit var mapFrameFactory: MapFrameFactory
 
     private val locationClient: FusedLocationProviderClient by inject()
 
@@ -77,6 +71,7 @@ class MapBroadcastingService : Service() {
     override fun onCreate() {
         super.onCreate()
         compositeDisposable = CompositeDisposable()
+        mapFrameFactory = get()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -97,17 +92,10 @@ class MapBroadcastingService : Service() {
             parametersOf(deviceAddress)
         }
 
-        snapshotter.setStyleListener(object : SnapshotStyleListener {
-            override fun onDidFinishLoadingStyle(style: Style) {
-                // TODO: Set track here.
-//                logger.debug { "snapshotter_style_extended" }
-            }
-        })
+        subscribeToLocations()
 
         requestLocationUpdates()
         publishCurrentLocation()
-
-        subscribeToLocations()
 
         return START_NOT_STICKY
     }
@@ -156,7 +144,7 @@ class MapBroadcastingService : Service() {
     private var locationsDisposable: Disposable? = null
     private fun subscribeToLocations() {
         var sendStartTime = 0L
-        lateinit var frameToSend: Bitmap
+        var frameToSend: Bitmap? = null
 
         locationsDisposable?.dispose()
         locationsDisposable = locationsSubject
@@ -167,40 +155,34 @@ class MapBroadcastingService : Service() {
             // Buffer size is set to 1 to eliminate queueing of outdated locations.
             .observeOn(Schedulers.io(), false, 1)
 
+            .flatMapSingle { location ->
+                mapFrameFactory
+                    .composeFrame(
+                        location = location,
+                        zoom = MAP_CAMERA_ZOOM,
+                    )
+                    .timeout(3, TimeUnit.SECONDS, Schedulers.io())
+                    .map { it to location }
+            }
+
             // Concurrency factor of 1 for this flatMap is essential.
             // Otherwise it creates multiple subscriptions waiting for the ending
             // in parallel, which breaks backpressure.
-            .flatMapSingle({ location ->
-                getMapSnapshot(location)
-                    .observeOn(Schedulers.io())
-                    .flatMap { snapshot ->
-                        composeFrame(
-                            snapshot = snapshot,
-                            bearing = location.bearing,
-                        )
-                            .doOnSuccess {
-                                logger.debug {
-                                    "subscribeToLocations(): frame_composed:" +
-                                            "\nlocation=$location"
-                                }
-                            }
-                    }
-                    .flatMap { frame ->
-                        frameToSend = frame
+            .flatMapSingle({ (frame, location) ->
+                frameToSend = frame
 
-                        SendFrameUseCase(
-                            frame = frame,
-                            commandSender = commandSender
-                        )
-                            .perform()
-                            .toSingleDefault(frame to location)
-                            .doOnSubscribe {
-                                logger.debug {
-                                    "subscribeToLocations(): subscribed_to_frame_sending:" +
-                                            "\nlocation=$location"
-                                }
-                                sendStartTime = System.currentTimeMillis()
-                            }
+                SendFrameUseCase(
+                    frame = frame,
+                    commandSender = commandSender
+                )
+                    .perform()
+                    .toSingleDefault(frame to location)
+                    .doOnSubscribe {
+                        logger.debug {
+                            "subscribeToLocations(): subscribed_to_frame_sending:" +
+                                    "\nlocation=$location"
+                        }
+                        sendStartTime = System.currentTimeMillis()
                     }
             }, false, 1)
             .doOnSubscribe {
@@ -222,76 +204,12 @@ class MapBroadcastingService : Service() {
                     // TODO: Remove once the logger is fixed.
                     it.printStackTrace()
 
-                    frameToSend.recycle()
+                    frameToSend?.recycle()
                     subscribeToLocations()
                 }
             )
             .addTo(compositeDisposable)
     }
-
-    private fun getMapSnapshot(locationData: LocationData): Single<Bitmap> =
-        Single.create { emitter ->
-            snapshotter.apply {
-                setCamera(
-                    CameraOptions.Builder()
-                        .center(locationData.toPoint())
-                        .zoom(MAP_CAMERA_ZOOM)
-                        .build()
-                )
-
-                start { snapshot ->
-                    val bitmap = snapshot?.bitmap()
-                    if (bitmap == null) {
-                        logger.debug { "captureAndSendMap(): snapshotter_not_ready" }
-
-                        emitter.tryOnError(RuntimeException("Snapshotter is not ready"))
-                    } else {
-                        logger.debug { "captureAndSendMap(): got_snapshot" }
-
-                        emitter.onSuccess(bitmap)
-                    }
-                }
-            }
-        }
-            // Important for Snapshotter.
-            .subscribeOn(AndroidSchedulers.mainThread())
-
-    private fun composeFrame(
-        snapshot: Bitmap,
-        bearing: Float
-    ): Single<Bitmap> = {
-        val resizedMap = Bitmap.createScaledBitmap(snapshot, 200, 200, false)
-        snapshot.recycle()
-
-        val canvas = Canvas(resizedMap)
-        val centerX = canvas.width / 2f
-        val centerY = canvas.height / 2f
-
-        // Draw the location marker, which is always in the center.
-        canvas.drawBitmap(
-            locationMarker,
-            centerX - locationMarker.width / 2f,
-            centerY - locationMarker.height / 2f,
-            null
-        )
-
-        // Draw the bearing indicator as a line pointing from the center.
-        val bearingCircleRadius = 10f
-        val bearingLineWidth = 5f
-        canvas.drawLine(
-            centerX,
-            centerY,
-            centerX + bearingCircleRadius * sin(bearing),
-            // Subtract the Y coordinate as canvas Y axis is top-to-bottom.
-            centerY - bearingCircleRadius * cos(bearing),
-            Paint().apply {
-                color = Color.BLACK
-                strokeWidth = bearingLineWidth
-            }
-        )
-
-        resizedMap
-    }.toSingle()
 
     private fun getNotification(frame: Bitmap? = null): Notification {
         val pendingIntent: PendingIntent =
@@ -338,8 +256,7 @@ class MapBroadcastingService : Service() {
         logger.debug { "destroying" }
 
         compositeDisposable.dispose()
-        snapshotter.cancel()
-        snapshotter.destroy()
+        mapFrameFactory.destroy()
         locationClient.removeLocationUpdates(locationCallback)
 
         super.onDestroy()
@@ -348,7 +265,6 @@ class MapBroadcastingService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 2
         private const val MAP_CAMERA_ZOOM = 15.3
-        private const val MAP_SIZE_DP = 230
 
         private const val DEVICE_ADDRESS_KEY = "device_address"
 

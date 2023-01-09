@@ -46,10 +46,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".features.map.view.MapActivity"
-            android:exported="false" />
-
     </application>
 
 </manifest>

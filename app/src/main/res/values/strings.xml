@@ -19,6 +19,6 @@
     <string name="clear_screen">Clear the screen</string>
     <string name="open_osm_and">Open OsmAnd</string>
     <string name="open_map">Open map</string>
-    <string name="capture_bitmap">Capture bitmap</string>
-    <string name="capture_and_send_bitmap">Capture and send bitmap</string>
+    <string name="capture_map_frame">Capture map frame</string>
+    <string name="capture_and_send_map_frame">Capture and send map frame</string>
 </resources>

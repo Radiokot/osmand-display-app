@@ -5,8 +5,11 @@ import android.app.Activity
 import android.bluetooth.le.ScanResult
 import android.companion.CompanionDeviceManager
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
@@ -20,6 +23,7 @@ import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_main.map_frame_image_view
 import mu.KotlinLogging
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.getKoin
@@ -34,7 +38,8 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapBroadcastingService
-import ua.com.radiokot.osmanddisplay.features.map.view.MapActivity
+import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
+import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 
 class MainActivity : AppCompatActivity() {
     sealed class SelectedDevice {
@@ -78,6 +83,8 @@ class MainActivity : AppCompatActivity() {
 
     private val commandSender: DisplayCommandSender
         get() = get { parametersOf(selectedDeviceAddress!!) }
+
+    private val mapFrameFactory: MapFrameFactory by inject()
 
     private val logger = KotlinLogging.logger("MainActivity@${hashCode()}")
 
@@ -127,8 +134,8 @@ class MainActivity : AppCompatActivity() {
             openOsmAnd()
         }
 
-        open_map_button.setOnClickListener {
-            openMap()
+        capture_map_frame_button.setOnClickListener {
+            captureMapFrame()
         }
 
         selectedDevice
@@ -190,11 +197,37 @@ class MainActivity : AppCompatActivity() {
             ?.also(this::startActivity)
     }
 
-    private fun openMap() {
-        startActivity(
-            Intent(this, MapActivity::class.java)
-                .putExtras(MapActivity.getBundle(selectedDeviceAddress))
-        )
+    private var captureDisposable: Disposable? = null
+    private fun captureMapFrame() {
+        captureDisposable?.dispose()
+        captureDisposable = mapFrameFactory
+            .composeFrame(
+                location = LocationData(
+                    lng = 35.07203,
+                    lat = 48.45664,
+                    bearing = (1..360).random().toFloat(),
+                ),
+                zoom = 15.3
+            )
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeBy(
+                onSuccess = this::showMapFrame,
+                onError = { toastManager.short("Error") }
+            )
+            .addTo(compositeDisposable)
+    }
+
+    private fun showMapFrame(frame: Bitmap) {
+        map_frame_image_view.apply {
+            drawable.also {
+                if (it is BitmapDrawable) {
+                    it.bitmap.recycle()
+                }
+            }
+            visibility = View.VISIBLE
+            setImageBitmap(frame)
+        }
     }
 
     private var scanAndSelectDisposable: Disposable? = null
@@ -313,5 +346,6 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         compositeDisposable.dispose()
+        mapFrameFactory.destroy()
     }
 }

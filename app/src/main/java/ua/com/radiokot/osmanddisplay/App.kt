@@ -10,6 +10,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidFileProperties
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
+import org.koin.core.logger.Level
 import org.slf4j.impl.HandroidLoggerAdapter
 import ua.com.radiokot.osmanddisplay.di.injectionModules
 import java.io.IOException
@@ -61,6 +62,8 @@ class App : Application() {
             }
 
             logger.error(e) { "undeliverable_rx_exception" }
+            // TODO: Remove once the logger is fixed.
+            e.printStackTrace()
         }
     }
 

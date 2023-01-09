@@ -4,14 +4,12 @@ import android.app.Activity
 import android.companion.CompanionDeviceManager
 import android.content.Context
 import android.content.SharedPreferences
-import android.location.LocationManager
+import android.graphics.BitmapFactory
 import android.os.Handler
 import android.os.Looper
-import androidx.core.location.LocationManagerCompat
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.mapbox.maps.*
 import com.welie.blessed.BluetoothCentralManager
@@ -19,7 +17,9 @@ import com.welie.blessed.BluetoothCentralManagerCallback
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.core.parameter.parametersOf
+import org.koin.dsl.bind
 import org.koin.dsl.module
+import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.data.storage.SharedPreferencesObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
@@ -29,6 +29,9 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.OsmAndAidlHelpe
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.OsmAndServiceConnectionListener
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
 import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
+import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
+import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
+import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFactory
 import java.util.*
 
 val injectionModules: List<Module> = listOf(
@@ -116,6 +119,7 @@ val injectionModules: List<Module> = listOf(
 
     // Map
     module {
+        // Snapshotter
         factory { (widthDp: Float, heightDp: Float, context: Context) ->
             val options = MapSnapshotOptions.Builder()
                 .size(Size(widthDp, heightDp))
@@ -131,9 +135,22 @@ val injectionModules: List<Module> = listOf(
                 showAttributes = false
             )
 
-            Snapshotter(context, options, overlayOptions).apply {
+            FriendlySnapshotter(context, options, overlayOptions).apply {
                 setStyleUri(getProperty("mapStyleUri"))
             }
+        } bind Snapshotter::class
+
+        // Map frame factory
+        factory<MapFrameFactory> {
+            SnapshotterMapFrameFactory(
+                snapshotter = get { parametersOf(230f, 230f, androidContext()) },
+                locationMarker = BitmapFactory.decodeResource(
+                    androidContext().resources,
+                    R.drawable.me
+                ),
+                frameWidthPx = 200,
+                frameHeightPx = 200,
+            )
         }
     },
 
