@@ -52,7 +52,6 @@ class SnapshotterMapFrameFactory(
                     "waitForSnapshotterSetup(): snapshotter_is_set_up"
                 }
 
-                onStyleLoaded(null)
                 onMapLoaded(null)
                 emitter.onSuccess(true)
             }
@@ -82,7 +81,7 @@ class SnapshotterMapFrameFactory(
                         "waitForSnapshotterSetup(): waiting_for_style_loading"
                     }
 
-                    onStyleLoaded {
+                    addStyleLoadedListenerOnce {
                         triggerMapLoading()
                     }
                 }

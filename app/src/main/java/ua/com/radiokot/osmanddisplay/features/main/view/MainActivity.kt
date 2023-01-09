@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity() {
     private val commandSender: DisplayCommandSender
         get() = get { parametersOf(selectedDeviceAddress!!) }
 
-    private val mapFrameFactory: MapFrameFactory by inject()
+    private val mapFrameFactory: MapFrameFactory by inject { parametersOf("track.geojson") }
 
     private val logger = KotlinLogging.logger("MainActivity@${hashCode()}")
 

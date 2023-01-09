@@ -22,6 +22,7 @@ import org.koin.dsl.module
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.data.storage.SharedPreferencesObjectPersistence
+import ua.com.radiokot.osmanddisplay.base.extension.addTrack
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.BleDisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
@@ -32,6 +33,7 @@ import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceU
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFactory
+import java.io.InputStreamReader
 import java.util.*
 
 val injectionModules: List<Module> = listOf(
@@ -120,7 +122,7 @@ val injectionModules: List<Module> = listOf(
     // Map
     module {
         // Snapshotter
-        factory { (widthDp: Float, heightDp: Float, context: Context) ->
+        factory { (widthDp: Float, heightDp: Float, context: Context, track: String?) ->
             val options = MapSnapshotOptions.Builder()
                 .size(Size(widthDp, heightDp))
                 .resourceOptions(
@@ -137,16 +139,34 @@ val injectionModules: List<Module> = listOf(
 
             FriendlySnapshotter(context, options, overlayOptions).apply {
                 setStyleUri(getProperty("mapStyleUri"))
+
+                if (track != null) {
+                    addStyleLoadedListenerOnce {
+                        style.apply {
+                            val trackInputStream =
+                                InputStreamReader(androidContext().assets.open(track))
+
+                            addTrack(
+                                id = "my-track",
+                                geoJsonData = trackInputStream.use(InputStreamReader::readText),
+                                directionMarker = BitmapFactory.decodeResource(
+                                    androidContext().resources,
+                                    R.drawable.arrow
+                                )
+                            )
+                        }
+                    }
+                }
             }
         } bind Snapshotter::class
 
         // Map frame factory
-        factory<MapFrameFactory> {
+        factory<MapFrameFactory> { (track: String?) ->
             SnapshotterMapFrameFactory(
-                snapshotter = get { parametersOf(230f, 230f, androidContext()) },
+                snapshotter = get { parametersOf(230f, 230f, androidContext(), track) },
                 locationMarker = BitmapFactory.decodeResource(
                     androidContext().resources,
-                    R.drawable.me
+                    R.drawable.location
                 ),
                 frameWidthPx = 200,
                 frameHeightPx = 200,

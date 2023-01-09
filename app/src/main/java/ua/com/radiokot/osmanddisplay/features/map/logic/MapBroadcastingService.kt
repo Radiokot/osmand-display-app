@@ -71,7 +71,7 @@ class MapBroadcastingService : Service() {
     override fun onCreate() {
         super.onCreate()
         compositeDisposable = CompositeDisposable()
-        mapFrameFactory = get()
+        mapFrameFactory = get { parametersOf("track.geojson") }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
