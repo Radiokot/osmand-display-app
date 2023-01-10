@@ -222,7 +222,6 @@ class MapBroadcastingService : Service() {
             this,
             NotificationChannelHelper.BROADCASTING_NOTIFICATION_CHANNEL_ID
         )
-            .setContentTitle(getString(R.string.app_name))
             .setContentText(getText(R.string.map_broadcasting_is_running))
             .setSmallIcon(R.drawable.ic_map)
             .setContentIntent(pendingIntent)

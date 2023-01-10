@@ -1,6 +1,8 @@
 package ua.com.radiokot.osmanddisplay.features.broadcasting.logic
 
-import android.app.*
+import android.app.Notification
+import android.app.PendingIntent
+import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -285,7 +287,6 @@ class DirectionsBroadcastingService : Service(), OsmAndServiceConnectionListener
             this,
             NotificationChannelHelper.BROADCASTING_NOTIFICATION_CHANNEL_ID
         )
-            .setContentTitle(getString(R.string.app_name))
             .setContentText(getText(R.string.directions_broadcasting_is_running))
             .setSmallIcon(R.drawable.ic_directions)
             .setContentIntent(pendingIntent)
