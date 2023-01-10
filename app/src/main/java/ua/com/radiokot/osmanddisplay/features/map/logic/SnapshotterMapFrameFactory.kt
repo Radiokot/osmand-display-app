@@ -122,7 +122,7 @@ class SnapshotterMapFrameFactory(
 
     private fun composeFrame(
         snapshot: Bitmap,
-        bearing: Float?,
+        bearing: Double?,
     ): Single<Bitmap> = {
         // Resize the snapshot to match the display size.
         val frame = Bitmap.createScaledBitmap(
@@ -150,9 +150,9 @@ class SnapshotterMapFrameFactory(
             canvas.drawLine(
                 centerX,
                 centerY,
-                centerX + BEARING_CIRCLE_RADIUS * sin(bearing),
+                centerX + BEARING_CIRCLE_RADIUS * sin(Math.toRadians(bearing)).toFloat(),
                 // Subtract the Y coordinate as canvas Y axis is top-to-bottom.
-                centerY - BEARING_CIRCLE_RADIUS * cos(bearing),
+                centerY - BEARING_CIRCLE_RADIUS * cos(Math.toRadians(bearing)).toFloat(),
                 Paint().apply {
                     color = Color.BLACK
                     strokeWidth = BEARING_LINE_WIDTH

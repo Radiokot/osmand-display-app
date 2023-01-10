@@ -23,7 +23,6 @@ import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.activity_main.map_frame_image_view
 import mu.KotlinLogging
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.getKoin
@@ -205,7 +204,7 @@ class MainActivity : AppCompatActivity() {
                 location = LocationData(
                     lng = 35.07203,
                     lat = 48.45664,
-                    bearing = (1..360).random().toFloat(),
+                    bearing = (1..360).random().toDouble(),
                 ),
                 zoom = 15.3
             )

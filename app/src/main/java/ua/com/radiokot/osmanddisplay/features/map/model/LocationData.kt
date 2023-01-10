@@ -6,12 +6,12 @@ import com.mapbox.geojson.Point
 data class LocationData(
     val lng: Double,
     val lat: Double,
-    val bearing: Float?,
+    val bearing: Double?,
 ) {
     constructor(location: Location) : this(
         lng = location.longitude,
         lat = location.latitude,
-        bearing = location.bearing,
+        bearing = location.bearing.takeIf { location.hasBearing() }?.toDouble(),
     )
 
     fun toPoint() = Point.fromLngLat(lng, lat)
