@@ -47,3 +47,6 @@ captures/
 *.jks
 keys/
 app/keystore.properties
+
+# Dev playground
+app/src/test/java/ua/com/radiokot/osmanddisplay/dev/
