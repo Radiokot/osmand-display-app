@@ -144,27 +144,20 @@ class MapBroadcastingService : Service() {
 
         locationsDisposable?.dispose()
         locationsDisposable = locationsSubject
-
             // Backpressure dropping strategy is set to eliminate queueing of outdated locations.
             .toFlowable(BackpressureStrategy.LATEST)
-
             // Buffer size is set to 1 to eliminate queueing of outdated locations.
             .observeOn(Schedulers.io(), false, 1)
-
-            .flatMapSingle { location ->
+            .concatMapSingle { location ->
                 mapFrameFactory
                     .composeFrame(
                         location = location,
                         zoom = MAP_CAMERA_ZOOM,
                     )
-                    .timeout(3, TimeUnit.SECONDS, Schedulers.io())
+                    .timeout(5, TimeUnit.SECONDS, Schedulers.io())
                     .map { it to location }
             }
-
-            // Concurrency factor of 1 for this flatMap is essential.
-            // Otherwise it creates multiple subscriptions waiting for the ending
-            // in parallel, which breaks backpressure.
-            .flatMapSingle({ (frame, location) ->
+            .concatMapSingle { (frame, location) ->
                 frameToSend = frame
 
                 SendFrameUseCase(
@@ -180,7 +173,8 @@ class MapBroadcastingService : Service() {
                         }
                         sendStartTime = System.currentTimeMillis()
                     }
-            }, false, 1)
+                    .timeout(15, TimeUnit.SECONDS, Schedulers.io())
+            }
             .doOnSubscribe {
                 logger.debug { "subscribeToLocations(): subscribed" }
             }

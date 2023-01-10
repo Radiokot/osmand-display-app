@@ -103,22 +103,15 @@ class DirectionsBroadcastingService : Service(), OsmAndServiceConnectionListener
     private fun subscribeToDirections() {
         directionsDisposable?.dispose()
         directionsDisposable = directionsSubject
-
             // Backpressure dropping strategy is set to eliminate queueing of outdated directions.
             .toFlowable(BackpressureStrategy.LATEST)
-
             // Do not re-broadcast items that are shown in the same way.
             .distinctUntilChanged { old, new ->
                 old.isShownLike(new)
             }
-
             // Buffer size is set to 1 to eliminate queueing of outdated directions.
             .observeOn(Schedulers.io(), false, 1)
-
-            // Concurrency factor of 1 for this flatMap with .delay is essential.
-            // Otherwise it creates multiple subscriptions waiting for delay ending
-            // in parallel, which breaks backpressure.
-            .flatMapSingle({ direction ->
+            .concatMapSingle { direction ->
                 commandSender
                     ?.send(DisplayCommand.ShowDirection(direction))
                     ?.doOnSubscribe {
@@ -142,7 +135,7 @@ class DirectionsBroadcastingService : Service(), OsmAndServiceConnectionListener
                     ?.delay(4800, TimeUnit.MILLISECONDS)
                     ?.toSingleDefault(direction)
                     ?: Single.error(Exception("Command sender is not set"))
-            }, false, 1)
+            }
             .doOnSubscribe {
                 logger.debug { "subscribed_to_directions" }
             }
