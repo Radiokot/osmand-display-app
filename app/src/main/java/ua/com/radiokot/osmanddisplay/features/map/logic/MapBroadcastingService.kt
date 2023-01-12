@@ -134,7 +134,21 @@ class MapBroadcastingService : Service() {
                     "\nlocation=${location}"
         }
 
-        locationsSubject.onNext(LocationData(location))
+        locationsSubject.onNext(
+            // If the speed is significant, feed the predicted future location.
+            if (location.speed >= PREDICTION_SPEED_THRESHOLD_MS && location.hasBearing()) {
+                logger.debug {
+                    "onLocationResult(): predict_future_location"
+                }
+
+                LocationData.ofDestinationPoint(
+                    currentLocation = location,
+                    travelTimeS = AVERAGE_FRAME_PROCESSING_TIME_S,
+                )
+            } else {
+                LocationData(location)
+            }
+        )
     }
 
     private var locationsDisposable: Disposable? = null
@@ -252,6 +266,8 @@ class MapBroadcastingService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 2
         private const val MAP_CAMERA_ZOOM = 15.3
+        private const val PREDICTION_SPEED_THRESHOLD_MS = 2.5
+        private const val AVERAGE_FRAME_PROCESSING_TIME_S = 6
 
         private const val DEVICE_ADDRESS_KEY = "device_address"
 
