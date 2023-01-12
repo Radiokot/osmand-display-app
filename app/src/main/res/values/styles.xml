@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="TextViewWithIcon">
+        <item name="android:drawablePadding">16dp</item>
+        <item name="drawableTint">?attr/colorOnSurface</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <style name="TextViewWithIcon.Clickable">
+        <item name="android:drawablePadding">16dp</item>
+        <item name="drawableTint">?attr/colorOnSurface</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingHorizontal">16dp</item>
+        <item name="android:paddingVertical">8dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:background">?selectableItemBackground</item>
+    </style>
+</resources>

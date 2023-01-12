@@ -15,6 +15,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.elevation.SurfaceColors
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -101,7 +102,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initButtons() {
-        scan_and_select_display_button.setOnClickListener {
+        selected_device_text_view.setOnClickListener {
             scanAndSelectDevice()
         }
 
@@ -276,15 +277,31 @@ class MainActivity : AppCompatActivity() {
             .observe(this) { selectedDevice ->
                 when (selectedDevice) {
                     SelectedDevice.Nothing -> {
-                        selected_device_text_view.text = getString(R.string.no_display_selected)
+                        selected_device_text_view.apply {
+                            text = getString(R.string.select_display)
+                            setTextColor(
+                                MaterialColors.getColor(
+                                    this,
+                                    android.R.attr.textColorSecondary
+                                )
+                            )
+                        }
                     }
                     is SelectedDevice.Selected -> {
-                        selected_device_text_view.text =
-                            getString(
-                                R.string.template_selected_device_name_address,
-                                selectedDevice.name ?: getString(R.string.device_no_name),
-                                selectedDevice.address
+                        selected_device_text_view.apply {
+                            text =
+                                getString(
+                                    R.string.template_selected_device_name_address,
+                                    selectedDevice.name ?: getString(R.string.device_no_name),
+                                    selectedDevice.address
+                                )
+                            setTextColor(
+                                MaterialColors.getColor(
+                                    this,
+                                    android.R.attr.textColorPrimary
+                                )
                             )
+                        }
                     }
                 }
             }
