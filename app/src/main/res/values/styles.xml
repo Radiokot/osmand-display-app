@@ -16,4 +16,10 @@
         <item name="android:clickable">true</item>
         <item name="android:background">?selectableItemBackground</item>
     </style>
+
+    <style name="ModalBottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="behavior_saveFlags">all</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.LargeComponent</item>
+    </style>
+
 </resources>

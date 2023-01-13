@@ -42,6 +42,7 @@ import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceU
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
+import ua.com.radiokot.osmanddisplay.features.map.track.view.ImportedTrackSelectionBottomSheet
 
 class MainActivity : AppCompatActivity() {
     sealed class SelectedDevice {
@@ -127,7 +128,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         map_track_text_view.setOnClickListener {
-            trackFileOpeningLauncher.launch(Unit)
+//            trackFileOpeningLauncher.launch(Unit)
+            ImportedTrackSelectionBottomSheet(this)
+                .show()
         }
 
         start_map_broadcasting_button.setOnClickListener {
