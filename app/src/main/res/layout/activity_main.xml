@@ -45,6 +45,7 @@
             android:text="@string/map_broadcasting_service" />
 
         <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/map_track_text_view"
             style="@style/TextViewWithIcon.Clickable"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
