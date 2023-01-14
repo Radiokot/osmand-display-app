@@ -23,6 +23,17 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <TextView
+            android:id="@+id/thumbnail_preparing_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/progress_preparing_track_thumbnail"
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            app:layout_constraintBottom_toBottomOf="@id/track_thumbnail_image_view"
+            app:layout_constraintEnd_toEndOf="@id/track_thumbnail_image_view"
+            app:layout_constraintStart_toStartOf="@id/track_thumbnail_image_view"
+            app:layout_constraintTop_toTopOf="@id/track_thumbnail_image_view" />
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/track_name_text_input_layout"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"

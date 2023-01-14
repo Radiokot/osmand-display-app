@@ -5,18 +5,22 @@ import android.companion.CompanionDeviceManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.android.gms.location.LocationServices
+import com.mapbox.geojson.GeoJson
+import com.mapbox.geojson.Geometry
 import com.mapbox.maps.*
 import com.welie.blessed.BluetoothCentralManager
 import com.welie.blessed.BluetoothCentralManagerCallback
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import ua.com.radiokot.osmanddisplay.R
@@ -121,8 +125,8 @@ val injectionModules: List<Module> = listOf(
 
     // Map
     module {
-        // Snapshotter
-        factory { (widthDp: Float, heightDp: Float, context: Context, track: String?) ->
+        // Snapshotter for map broadcasting
+        factory(named(InjectedSnapshotter.MAP_BROADCASTING)) { (widthDp: Float, heightDp: Float, track: String?) ->
             val options = MapSnapshotOptions.Builder()
                 .size(Size(widthDp, heightDp))
                 .resourceOptions(
@@ -137,7 +141,7 @@ val injectionModules: List<Module> = listOf(
                 showAttributes = false
             )
 
-            FriendlySnapshotter(context, options, overlayOptions).apply {
+            FriendlySnapshotter(get(), options, overlayOptions).apply {
                 setStyleUri(getProperty("mapStyleUri"))
 
                 if (track != null) {
@@ -160,10 +164,57 @@ val injectionModules: List<Module> = listOf(
             }
         } bind Snapshotter::class
 
+        // Snapshotter for track thumbnails
+        factory(named(InjectedSnapshotter.TRACK_THUMBNAIL)) { (track: GeoJson, geometry: Geometry) ->
+            val options = MapSnapshotOptions.Builder()
+                .size(Size(600f, 450f))
+                .resourceOptions(
+                    ResourceOptions.Builder()
+                        .accessToken(ua.com.radiokot.osmanddisplay.BuildConfig.MAPBOX_PUBLIC_TOKEN)
+                        .build()
+                )
+                .build()
+
+            val overlayOptions = SnapshotOverlayOptions(
+                showLogo = true,
+                showAttributes = false
+            )
+
+            FriendlySnapshotter(get(), options, overlayOptions).apply {
+                setStyleUri(getProperty("trackThumbnailMapStyleUri"))
+
+                addStyleLoadedListenerOnce {
+                    setCamera(
+                        coreSnapshotter.cameraForGeometry(
+                            geometry,
+                            EdgeInsets(20.0, 20.0, 20.0, 20.0),
+                            0.0,
+                            0.0
+                        )
+                    )
+
+                    style.apply {
+                        addTrack(
+                            id = "my-track",
+                            geoJsonData = track.toJson(),
+                            color = Color.RED,
+                            width = 5.0,
+                        )
+                    }
+                }
+            }
+        } bind Snapshotter::class
+
         // Map frame factory
         factory<MapFrameFactory> { (track: String?) ->
             SnapshotterMapFrameFactory(
-                snapshotter = get { parametersOf(230f, 230f, androidContext(), track) },
+                snapshotter = get(named(InjectedSnapshotter.MAP_BROADCASTING)) {
+                    parametersOf(
+                        230f,
+                        230f,
+                        track
+                    )
+                },
                 locationMarker = BitmapFactory.decodeResource(
                     androidContext().resources,
                     R.drawable.location

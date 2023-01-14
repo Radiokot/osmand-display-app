@@ -5,7 +5,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import com.mapbox.maps.CameraOptions
-import com.mapbox.maps.bitmap
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.toSingle
@@ -94,31 +93,22 @@ class SnapshotterMapFrameFactory(
     private fun getMapSnapshot(
         location: LocationData,
         zoom: Double,
-    ): Single<Bitmap> = Single.create<Bitmap> { emitter ->
-        snapshotter.apply {
-            setCamera(
-                CameraOptions.Builder()
-                    .center(location.toPoint())
-                    .zoom(zoom)
-                    .build()
-            )
+    ): Single<Bitmap> {
+        snapshotter.setCamera(
+            CameraOptions.Builder()
+                .center(location.toPoint())
+                .zoom(zoom)
+                .build()
+        )
 
-            start { snapshot ->
-                val bitmap = snapshot?.bitmap()
-                if (bitmap == null) {
-                    logger.warn { "getMapSnapshot(): snapshotter_not_ready" }
-
-                    emitter.tryOnError(RuntimeException("Snapshotter is not ready"))
-                } else {
-                    logger.debug { "getMapSnapshot(): got_snapshot" }
-
-                    emitter.onSuccess(bitmap)
-                }
+        return snapshotter.getSnapshotBitmap()
+            .doOnError {
+                logger.warn { "getMapSnapshot(): snapshotter_not_ready" }
             }
-        }
+            .doOnSuccess {
+                logger.debug { "getMapSnapshot(): got_snapshot" }
+            }
     }
-        // Important for Snapshotter.
-        .subscribeOn(AndroidSchedulers.mainThread())
 
     private fun composeFrame(
         snapshot: Bitmap,

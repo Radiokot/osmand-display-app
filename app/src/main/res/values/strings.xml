@@ -28,4 +28,5 @@
     <string name="track_thumbnail">Thumbnail</string>
     <string name="track_name">Name</string>
     <string name="error_not_a_geojson_track">The file is not a GeoJSON track</string>
+    <string name="progress_preparing_track_thumbnail">Preparing track thumbnail…</string>
 </resources>
