@@ -3,6 +3,7 @@ package ua.com.radiokot.osmanddisplay.features.track.view
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
+import androidx.core.widget.addTextChangedListener
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
@@ -29,7 +30,24 @@ class ImportTrackActivity : BaseActivity() {
     }
 
     private lateinit var geoJsonTrackData: GeoJsonTrackData
+
     private var trackThumbnail: Bitmap? = null
+        set(value) {
+            field = value
+            validate()
+        }
+
+    private var trackName: String? = null
+        set(value) {
+            field = value
+            validate()
+        }
+
+    private var canImport: Boolean = false
+        set(value) {
+            field = value
+            import_track_button.isEnabled = value
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +67,8 @@ class ImportTrackActivity : BaseActivity() {
         initThumbnail()
         initFields()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        canImport = false
     }
 
     private fun tryToReadFile(): GeoJsonTrackData? {
@@ -96,7 +116,15 @@ class ImportTrackActivity : BaseActivity() {
     }
 
     private fun initFields() {
+        track_name_edit_text.addTextChangedListener { text ->
+            trackName = text?.toString()
+        }
         track_name_edit_text.setText(geoJsonTrackData.name ?: file.name)
+    }
+
+    private fun validate() {
+        canImport = !trackName.isNullOrBlank()
+                && trackThumbnail != null
     }
 
     companion object {

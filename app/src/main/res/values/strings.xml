@@ -25,6 +25,7 @@
     <string name="select_track">Select track</string>
     <string name="no_track">No track</string>
     <string name="import_track">Import track</string>
+    <string name="import_track_short">Import</string>
     <string name="track_thumbnail">Thumbnail</string>
     <string name="track_name">Name</string>
     <string name="error_not_a_geojson_track">The file is not a GeoJSON track</string>

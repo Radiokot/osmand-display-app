@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fillViewport="true"
     tools:context=".features.track.view.ImportTrackActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -39,17 +40,29 @@
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="24dp"
             android:hint="@string/track_name"
-            app:layout_constraintTop_toBottomOf="@id/track_thumbnail_image_view">
+            app:layout_constraintBottom_toTopOf="@id/import_track_button"
+            app:layout_constraintTop_toBottomOf="@id/track_thumbnail_image_view"
+            app:layout_constraintVertical_chainStyle="spread_inside">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/track_name_edit_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/import_track_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginVertical="24dp"
+            android:text="@string/import_track_short"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/track_name_text_input_layout"
+            app:layout_constraintVertical_weight="12" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </ScrollView>
