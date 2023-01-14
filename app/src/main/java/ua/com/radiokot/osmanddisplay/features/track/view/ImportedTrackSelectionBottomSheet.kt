@@ -33,9 +33,24 @@ class ImportedTrackSelectionBottomSheet :
         super.onViewCreated(view, savedInstanceState)
         if (savedInstanceState == null) {
             initList()
-            initEmptyView()
+            initButtons()
 
-            displayTracks(emptyList())
+            displayTracks(
+                listOf(
+                    ImportedTrackListItem(
+                        name = "Dnipro #1",
+                        importedAt = "02.01.2023"
+                    ),
+                    ImportedTrackListItem(
+                        name = "My test track",
+                        importedAt = "01.01.2023"
+                    ),
+                    ImportedTrackListItem(
+                        name = "Imported #33242",
+                        importedAt = "29.12.2022"
+                    )
+                )
+            )
         }
     }
 
@@ -51,27 +66,14 @@ class ImportedTrackSelectionBottomSheet :
 
         tracks_recycler_view.layoutManager = LinearLayoutManager(context)
         tracks_recycler_view.adapter = adapter
-
-        itemAdapter.add(
-            listOf(
-                ImportedTrackListItem(
-                    name = "Dnipro #1",
-                    importedAt = "02.01.2023"
-                ),
-                ImportedTrackListItem(
-                    name = "My test track",
-                    importedAt = "01.01.2023"
-                ),
-                ImportedTrackListItem(
-                    name = "Imported #33242",
-                    importedAt = "29.12.2022"
-                )
-            )
-        )
     }
 
-    private fun initEmptyView() {
+    private fun initButtons() {
         import_track_button.setOnClickListener {
+            trackFileOpeningLauncher.launch(Unit)
+        }
+
+        import_track_header_button.setOnClickListener {
             trackFileOpeningLauncher.launch(Unit)
         }
     }
@@ -81,8 +83,10 @@ class ImportedTrackSelectionBottomSheet :
 
         if (tracks.isEmpty()) {
             empty_view.visibility = View.VISIBLE
+            import_track_header_button.visibility = View.GONE
         } else {
             empty_view.visibility = View.GONE
+            import_track_header_button.visibility = View.VISIBLE
         }
     }
 

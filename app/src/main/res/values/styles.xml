@@ -22,4 +22,11 @@
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.LargeComponent</item>
     </style>
 
+    <style name="BorderlessImageButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:background">?selectableItemBackgroundBorderless</item>
+    </style>
+
 </resources>
