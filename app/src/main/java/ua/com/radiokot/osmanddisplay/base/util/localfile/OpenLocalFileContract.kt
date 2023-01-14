@@ -14,9 +14,11 @@ import mu.KotlinLogging
  * The input is the mime types to filter by, e.g. `image/\*`.
  */
 class OpenLocalFileContract(
-    private val contentResolver: Lazy<ContentResolver>,
+    lazyContentResolver: Lazy<ContentResolver>,
 ) :
     ActivityResultContract<Collection<String>?, OpenLocalFileContract.Result>() {
+
+    private val contentResolver: ContentResolver by lazyContentResolver
 
     sealed class Result {
         /**
@@ -66,7 +68,7 @@ class OpenLocalFileContract(
             return Result.Cancelled
         }
 
-        val localFile = LocalFile.fromUri(uri, contentResolver.value)
+        val localFile = LocalFile.fromUri(uri, contentResolver)
 
         logger.debug {
             "parseResult(): got_file:" +

@@ -13,7 +13,6 @@ import android.view.View
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
-import androidx.activity.result.registerForActivityResult
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.color.MaterialColors
@@ -32,7 +31,6 @@ import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.util.PermissionManager
-import ua.com.radiokot.osmanddisplay.base.util.localfile.OpenLocalFileContract
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DirectionsBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
@@ -66,16 +64,6 @@ class MainActivity : AppCompatActivity() {
 
     private val deviceSelectionLauncher =
         registerForActivityResult(StartIntentSenderForResult(), this::onDeviceSelectionResult)
-
-    private val trackFileOpeningLauncher =
-        registerForActivityResult(
-            OpenLocalFileContract(lazy { contentResolver }),
-            setOf(
-                "application/geo+json", // Hopeless
-                "application/octet-stream"
-            ),
-            this::onTrackFileOpened
-        )
 
     private val compositeDisposable = CompositeDisposable()
 
@@ -128,9 +116,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         map_track_text_view.setOnClickListener {
-//            trackFileOpeningLauncher.launch(Unit)
-            ImportedTrackSelectionBottomSheet(this)
-                .show()
+            ImportedTrackSelectionBottomSheet()
+                .show(supportFragmentManager, ImportedTrackSelectionBottomSheet.TAG)
         }
 
         start_map_broadcasting_button.setOnClickListener {
@@ -289,12 +276,6 @@ class MainActivity : AppCompatActivity() {
                     selectedDevice.value = SelectedDevice.Selected(selectedBleDevice)
                 }
             }
-    }
-
-    private fun onTrackFileOpened(result: OpenLocalFileContract.Result) {
-        if (result is OpenLocalFileContract.Result.Opened) {
-            map_track_text_view.text = result.file.toString()
-        }
     }
 
     private fun initSelectedDeviceDisplay() {
