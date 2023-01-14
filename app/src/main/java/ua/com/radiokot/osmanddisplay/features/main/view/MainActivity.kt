@@ -13,12 +13,9 @@ import android.view.View
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.color.MaterialColors
-import com.google.android.material.elevation.SurfaceColors
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
@@ -31,7 +28,7 @@ import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.util.PermissionManager
-import ua.com.radiokot.osmanddisplay.base.view.ToastManager
+import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DirectionsBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
@@ -42,7 +39,7 @@ import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 import ua.com.radiokot.osmanddisplay.features.track.view.ImportedTrackSelectionBottomSheet
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
     sealed class SelectedDevice {
         object Nothing : SelectedDevice()
         class Selected(
@@ -64,10 +61,6 @@ class MainActivity : AppCompatActivity() {
 
     private val deviceSelectionLauncher =
         registerForActivityResult(StartIntentSenderForResult(), this::onDeviceSelectionResult)
-
-    private val compositeDisposable = CompositeDisposable()
-
-    private val toastManager: ToastManager by inject()
 
     private val bluetoothConnectPermission: PermissionManager by lazy {
         PermissionManager("android.permission.BLUETOOTH_CONNECT", 332)
@@ -93,13 +86,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initColor()
         initSelectedDeviceDisplay()
         initButtons()
-    }
-
-    private fun initColor() {
-        window.statusBarColor = SurfaceColors.SURFACE_2.getColor(this)
     }
 
     private fun initButtons() {
@@ -367,7 +355,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        compositeDisposable.dispose()
         mapFrameFactory.destroy()
     }
 }

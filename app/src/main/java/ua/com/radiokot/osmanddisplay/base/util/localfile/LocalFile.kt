@@ -2,16 +2,19 @@ package ua.com.radiokot.osmanddisplay.base.util.localfile
 
 import android.content.ContentResolver
 import android.net.Uri
+import android.os.Parcelable
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
+import kotlinx.android.parcel.Parcelize
 import java.io.File
 import java.util.*
 
 /**
  * Represents a file stored on the device
  */
+@Parcelize
 data class LocalFile(
     /**
      * 'file://' or 'content://' URI for the file
@@ -29,7 +32,7 @@ data class LocalFile(
      * Name of the file with extension
      */
     val name: String
-) {
+) : Parcelable {
     companion object {
         private fun getMimeTypeOfFile(fileUri: Uri): String {
             val fileExtension = MimeTypeMap.getFileExtensionFromUrl(fileUri.toString())
@@ -50,23 +53,30 @@ data class LocalFile(
             val name: String
 
             val projection = arrayOf(
-                MediaStore.MediaColumns.DISPLAY_NAME,
-                MediaStore.MediaColumns.SIZE
+                OpenableColumns.SIZE,
+                OpenableColumns.DISPLAY_NAME
             )
             val queryCursor = contentResolver
                 .query(uri, projection, null, null, null)
 
             if (queryCursor?.moveToFirst() == true) {
                 // Content URI
-                size = queryCursor.getLong(queryCursor.getColumnIndex(OpenableColumns.SIZE))
-                name =
-                    queryCursor.getString(queryCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME))
+                val sizeColumnIndex = queryCursor.getColumnIndex(OpenableColumns.SIZE)
+                check(sizeColumnIndex >= 0) {
+                    "There must be the size column in the content query result"
+                }
+
+                val displayNameColumnIndex =
+                    queryCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                check(displayNameColumnIndex >= 0) {
+                    "There must be the display name column in the content query result"
+                }
+
+                size = queryCursor.getLong(sizeColumnIndex)
+                name = queryCursor.getString(displayNameColumnIndex)
             } else {
                 // File URI
-                val file = File(
-                    uri.path
-                        ?: throw IllegalArgumentException("Not a file URI, missing path")
-                )
+                val file = File(requireNotNull(uri.path) { "Not a file URI, missing path" })
                 size = file.length()
                 name = file.name
             }

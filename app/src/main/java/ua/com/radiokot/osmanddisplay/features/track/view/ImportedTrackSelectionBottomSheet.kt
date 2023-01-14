@@ -1,5 +1,6 @@
 package ua.com.radiokot.osmanddisplay.features.track.view
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.registerForActivityResult
@@ -23,7 +24,8 @@ class ImportedTrackSelectionBottomSheet :
         registerForActivityResult(
             OpenLocalFileContract(lazy { requireContext().contentResolver }),
             setOf(
-                "application/geo+json", // Hopeless
+                "application/vnd.geo+json", // Hopeless
+                "application/json",
                 "application/octet-stream"
             ),
             this::onTrackFileOpened
@@ -70,12 +72,16 @@ class ImportedTrackSelectionBottomSheet :
 
     private fun initButtons() {
         import_track_button.setOnClickListener {
-            trackFileOpeningLauncher.launch(Unit)
+            openTrackFile()
         }
 
         import_track_header_button.setOnClickListener {
-            trackFileOpeningLauncher.launch(Unit)
+            openTrackFile()
         }
+    }
+
+    private fun openTrackFile() {
+        trackFileOpeningLauncher.launch(Unit)
     }
 
     private fun displayTracks(tracks: List<ImportedTrackListItem>) {
@@ -92,7 +98,10 @@ class ImportedTrackSelectionBottomSheet :
 
     private fun onTrackFileOpened(result: OpenLocalFileContract.Result) {
         if (result is OpenLocalFileContract.Result.Opened) {
-            import_track_button.text = result.file.name
+            startActivity(
+                Intent(requireContext(), ImportTrackActivity::class.java)
+                    .putExtras(ImportTrackActivity.getBundle(result.file))
+            )
         }
     }
 
