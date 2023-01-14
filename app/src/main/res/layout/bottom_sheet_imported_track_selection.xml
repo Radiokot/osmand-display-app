@@ -13,12 +13,8 @@
         android:text="@string/select_track"
         android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
 
-    <include layout="@layout/list_item_imported_track" />
-
-    <include layout="@layout/list_item_imported_track" />
-
-    <!--    <androidx.recyclerview.widget.RecyclerView-->
-    <!--        android:id="@+id/tracks_recycler_view"-->
-    <!--        android:layout_width="match_parent"-->
-    <!--        android:layout_height="match_parent" />-->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/tracks_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 </LinearLayout>

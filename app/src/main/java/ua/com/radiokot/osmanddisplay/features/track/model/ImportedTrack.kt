@@ -1,13 +1,14 @@
-package ua.com.radiokot.osmanddisplay.features.map.track.model
+package ua.com.radiokot.osmanddisplay.features.track.model
 
 import java.io.File
 import java.time.Instant
+import java.util.Date
 
 class ImportedTrack() {
     val name: String
         get() = TODO()
 
-    val importedAt: Instant
+    val importedAt: Date
         get() = TODO()
 
     val previewImageFile: File
