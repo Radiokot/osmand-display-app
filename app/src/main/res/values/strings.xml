@@ -30,4 +30,6 @@
     <string name="track_name">Name</string>
     <string name="error_not_a_geojson_track">The file is not a GeoJSON track</string>
     <string name="progress_preparing_track_thumbnail">Preparing track thumbnail…</string>
+    <string name="error_failed_to_import_track">Failed to import the track</string>
+    <string name="clear_imported_tracks">Clear imported tracks</string>
 </resources>

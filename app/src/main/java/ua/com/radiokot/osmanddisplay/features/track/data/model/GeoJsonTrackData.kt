@@ -1,4 +1,4 @@
-package ua.com.radiokot.osmanddisplay.features.track.model
+package ua.com.radiokot.osmanddisplay.features.track.data.model
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject

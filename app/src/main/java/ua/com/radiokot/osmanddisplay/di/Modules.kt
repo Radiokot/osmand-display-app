@@ -24,6 +24,7 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import ua.com.radiokot.osmanddisplay.R
+import ua.com.radiokot.osmanddisplay.base.data.storage.MemoryOnlyRepositoryCache
 import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.data.storage.SharedPreferencesObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.extension.addTrack
@@ -37,6 +38,8 @@ import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceU
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFactory
+import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
+import java.io.File
 import java.io.InputStreamReader
 import java.util.*
 
@@ -166,8 +169,9 @@ val injectionModules: List<Module> = listOf(
 
         // Snapshotter for track thumbnails
         factory(named(InjectedSnapshotter.TRACK_THUMBNAIL)) { (track: GeoJson, geometry: Geometry) ->
+            val width = 350f
             val options = MapSnapshotOptions.Builder()
-                .size(Size(600f, 450f))
+                .size(Size(width, width * 0.75f))
                 .resourceOptions(
                     ResourceOptions.Builder()
                         .accessToken(ua.com.radiokot.osmanddisplay.BuildConfig.MAPBOX_PUBLIC_TOKEN)
@@ -198,7 +202,7 @@ val injectionModules: List<Module> = listOf(
                             id = "my-track",
                             geoJsonData = track.toJson(),
                             color = Color.RED,
-                            width = 5.0,
+                            width = width / 120.0,
                         )
                     }
                 }
@@ -229,6 +233,19 @@ val injectionModules: List<Module> = listOf(
     module {
         factory {
             LocationServices.getFusedLocationProviderClient(androidContext())
+        }
+    },
+
+    // Repository
+    module {
+        single {
+            ImportedTracksRepository(
+                directory = File(get<Context>().noBackupFilesDir, "tracks/")
+                    .apply {
+                        mkdir()
+                    },
+                itemsCache = MemoryOnlyRepositoryCache()
+            )
         }
     },
 )

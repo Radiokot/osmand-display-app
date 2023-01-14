@@ -1,5 +1,6 @@
 package ua.com.radiokot.osmanddisplay.features.track.view
 
+import android.app.Activity
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
@@ -7,9 +8,11 @@ import androidx.core.widget.addTextChangedListener
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_import_track.*
 import mu.KotlinLogging
 import org.koin.android.ext.android.get
+import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
 import ua.com.radiokot.osmanddisplay.R
@@ -17,11 +20,14 @@ import ua.com.radiokot.osmanddisplay.base.util.localfile.LocalFile
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.di.InjectedSnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
-import ua.com.radiokot.osmanddisplay.features.track.model.GeoJsonTrackData
+import ua.com.radiokot.osmanddisplay.features.track.data.model.GeoJsonTrackData
+import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
 import java.io.InputStreamReader
 
 class ImportTrackActivity : BaseActivity() {
     private val logger = KotlinLogging.logger("ImportTrackActivity@${hashCode()}")
+
+    private val importedTracksRepository: ImportedTracksRepository by inject()
 
     private val file: LocalFile by lazy {
         checkNotNull(intent.getParcelableExtra(FILE_EXTRA)) {
@@ -66,6 +72,7 @@ class ImportTrackActivity : BaseActivity() {
 
         initThumbnail()
         initFields()
+        initButtons()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         canImport = false
@@ -122,9 +129,42 @@ class ImportTrackActivity : BaseActivity() {
         track_name_edit_text.setText(geoJsonTrackData.name ?: file.name)
     }
 
+    private fun initButtons() {
+        import_track_button.setOnClickListener {
+            importTrack()
+        }
+    }
+
     private fun validate() {
         canImport = !trackName.isNullOrBlank()
                 && trackThumbnail != null
+    }
+
+    private fun importTrack() {
+        if (!canImport) {
+            return
+        }
+
+        importedTracksRepository
+            .importTrack(
+                name = trackName!!,
+                geometry = geoJsonTrackData.geometry,
+                thumbnail = trackThumbnail!!
+            )
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeBy(
+                onComplete = {
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                },
+                onError = {
+                    logger.error(it) { "importTrack(): error_occurred" }
+
+                    toastManager.short(R.string.error_failed_to_import_track)
+                }
+            )
+            .addTo(compositeDisposable)
     }
 
     companion object {

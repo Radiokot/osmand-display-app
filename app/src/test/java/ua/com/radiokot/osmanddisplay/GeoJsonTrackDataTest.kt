@@ -2,7 +2,7 @@ package ua.com.radiokot.osmanddisplay
 
 import org.junit.Assert
 import org.junit.Test
-import ua.com.radiokot.osmanddisplay.features.track.model.GeoJsonTrackData
+import ua.com.radiokot.osmanddisplay.features.track.data.model.GeoJsonTrackData
 
 class GeoJsonTrackDataTest {
     @Test

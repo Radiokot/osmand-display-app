@@ -37,6 +37,7 @@ import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceU
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
+import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
 import ua.com.radiokot.osmanddisplay.features.track.view.ImportedTrackSelectionBottomSheet
 
 class MainActivity : BaseActivity() {
@@ -79,6 +80,8 @@ class MainActivity : BaseActivity() {
         get() = get { parametersOf(selectedDeviceAddress!!) }
 
     private val mapFrameFactory: MapFrameFactory by inject { parametersOf("track.geojson") }
+
+    private val importedTracksRepository: ImportedTracksRepository by inject()
 
     private val logger = KotlinLogging.logger("MainActivity@${hashCode()}")
 
@@ -130,6 +133,16 @@ class MainActivity : BaseActivity() {
 
         capture_map_frame_button.setOnClickListener {
             captureMapFrame()
+        }
+
+        clear_imported_tracks_button.setOnClickListener {
+            importedTracksRepository
+                .clear()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    toastManager.short("Imported tracks cleared")
+                }
+                .addTo(compositeDisposable)
         }
 
         selectedDevice

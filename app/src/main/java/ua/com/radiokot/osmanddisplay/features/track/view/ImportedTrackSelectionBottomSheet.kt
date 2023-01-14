@@ -8,17 +8,29 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.mikepenz.fastadapter.FastAdapter
 import com.mikepenz.fastadapter.adapters.ItemAdapter
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
 import kotlinx.android.synthetic.main.bottom_sheet_imported_track_selection.*
 import mu.KotlinLogging
+import org.koin.android.ext.android.inject
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.util.localfile.OpenLocalFileContract
+import ua.com.radiokot.osmanddisplay.base.view.dateformat.DateFormats
+import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
+import java.text.DateFormat
 
 class ImportedTrackSelectionBottomSheet :
     BottomSheetDialogFragment(R.layout.bottom_sheet_imported_track_selection) {
 
     private val logger = KotlinLogging.logger("TracksBottomSheet@${hashCode()}")
 
+    private val importedTracksRepository: ImportedTracksRepository by inject()
+
     private val itemAdapter = ItemAdapter<ImportedTrackListItem>()
+    private val trackDateFormat: DateFormat by lazy {
+        DateFormats.longTimeOrDate(requireContext())
+    }
 
     private val trackFileOpeningLauncher =
         registerForActivityResult(
@@ -31,28 +43,18 @@ class ImportedTrackSelectionBottomSheet :
             this::onTrackFileOpened
         )
 
+    private lateinit var compositeDisposable: CompositeDisposable
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        compositeDisposable = CompositeDisposable()
         if (savedInstanceState == null) {
             initList()
             initButtons()
 
-            displayTracks(
-                listOf(
-                    ImportedTrackListItem(
-                        name = "Dnipro #1",
-                        importedAt = "02.01.2023"
-                    ),
-                    ImportedTrackListItem(
-                        name = "My test track",
-                        importedAt = "01.01.2023"
-                    ),
-                    ImportedTrackListItem(
-                        name = "Imported #33242",
-                        importedAt = "29.12.2022"
-                    )
-                )
-            )
+            subscribeToTracks()
+
+            importedTracksRepository.updateIfNotFresh()
         }
     }
 
@@ -80,6 +82,20 @@ class ImportedTrackSelectionBottomSheet :
         }
     }
 
+    private fun subscribeToTracks() {
+        importedTracksRepository.itemsSubject
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe { importedTracks ->
+                displayTracks(importedTracks.map {
+                    ImportedTrackListItem(
+                        it,
+                        trackDateFormat
+                    )
+                })
+            }
+            .addTo(compositeDisposable)
+    }
+
     private fun openTrackFile() {
         trackFileOpeningLauncher.launch(Unit)
     }
@@ -103,6 +119,12 @@ class ImportedTrackSelectionBottomSheet :
                     .putExtras(ImportTrackActivity.getBundle(result.file))
             )
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        compositeDisposable.dispose()
+        compositeDisposable = CompositeDisposable()
     }
 
     companion object {
