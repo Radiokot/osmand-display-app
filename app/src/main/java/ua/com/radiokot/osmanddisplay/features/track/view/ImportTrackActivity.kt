@@ -9,6 +9,7 @@ import ua.com.radiokot.osmanddisplay.base.util.localfile.LocalFile
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.track.model.GeoJsonTrackData
 import java.io.InputStreamReader
+import java.net.URLEncoder
 
 class ImportTrackActivity : BaseActivity() {
     private val logger = KotlinLogging.logger("ImportTrackActivity@${hashCode()}")
@@ -21,20 +22,28 @@ class ImportTrackActivity : BaseActivity() {
     private lateinit var geoJsonTrackData: GeoJsonTrackData
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        readFileOrFinish()
-
         super.onCreate(savedInstanceState)
+
+        tryToReadFile().also { readData ->
+            if (readData == null) {
+                toastManager.short(R.string.error_not_a_geojson_track)
+                finish()
+                return
+            } else {
+                geoJsonTrackData = readData
+            }
+        }
+
         setContentView(R.layout.activity_import_track)
 
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         initFields()
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
-    private fun readFileOrFinish() {
-        try {
-            val extension = MimeTypeMap.getFileExtensionFromUrl("/" + file.name)
-            require(extension in GEOJSON_EXTENSIONS) {
-                "The file has an unsupported extension: $extension"
+    private fun tryToReadFile(): GeoJsonTrackData? {
+        return try {
+            require(file.extension in GEOJSON_EXTENSIONS) {
+                "The file has an unsupported extension: ${file.extension}"
             }
 
             require(file.size <= MAX_FILE_SIZE_BYTES) {
@@ -45,12 +54,10 @@ class ImportTrackActivity : BaseActivity() {
                 InputStreamReader(it).readText()
             }
 
-            geoJsonTrackData = GeoJsonTrackData.fromFileContent(fileContent)
+            GeoJsonTrackData.fromFileContent(fileContent)
         } catch (e: Exception) {
             logger.error(e) { "readFileOrFinish(): check_failed" }
-
-            toastManager.short(R.string.error_not_a_geojson_track)
-            finish()
+            null
         }
     }
 

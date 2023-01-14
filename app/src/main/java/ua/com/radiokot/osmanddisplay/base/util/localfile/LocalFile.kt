@@ -9,6 +9,7 @@ import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
 import kotlinx.android.parcel.Parcelize
 import java.io.File
+import java.net.URLEncoder
 import java.util.*
 
 /**
@@ -33,6 +34,14 @@ data class LocalFile(
      */
     val name: String
 ) : Parcelable {
+    /**
+     * File extension without a dot.
+     */
+    val extension: String? = name
+        // It's OK as long as we only deal with a file name without the path.
+        .substringAfterLast('.', "")
+        .takeIf(String::isNotEmpty)
+
     companion object {
         private fun getMimeTypeOfFile(fileUri: Uri): String {
             val fileExtension = MimeTypeMap.getFileExtensionFromUrl(fileUri.toString())
