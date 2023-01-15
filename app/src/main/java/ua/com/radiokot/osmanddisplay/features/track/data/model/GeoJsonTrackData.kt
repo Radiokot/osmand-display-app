@@ -1,16 +1,19 @@
 package ua.com.radiokot.osmanddisplay.features.track.data.model
 
+import android.os.Parcelable
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Geometry
+import kotlinx.android.parcel.Parcelize
 
+@Parcelize
 class GeoJsonTrackData(
     val name: String?,
     val geoJsonFeature: Feature,
     val geometry: Geometry,
-) {
+) : Parcelable {
     companion object {
         /**
          * @return [GeoJsonTrackData] if the [content] is a track GeoJSON,

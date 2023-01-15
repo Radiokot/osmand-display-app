@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <queries>
         <package android:name="net.osmand" />
@@ -44,11 +45,26 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".features.track.view.ImportTrackActivity"
             android:exported="false"
             android:label="@string/import_track" />
+        <activity
+            android:name=".features.track.brouter.view.BRouterUrlActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Material3.DayNight.Dialog">
+            <intent-filter android:label="@string/import_track_from_brouter">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="brouter.de"
+                    android:pathPrefix="/brouter-web"
+                    android:scheme="https" />
+            </intent-filter>
+        </activity>
 
     </application>
 

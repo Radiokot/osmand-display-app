@@ -31,10 +31,11 @@ class ImportTrackActivity : BaseActivity() {
 
     private val importedTracksRepository: ImportedTracksRepository by inject()
 
-    private val file: LocalFile by lazy {
-        checkNotNull(intent.getParcelableExtra(FILE_EXTRA)) {
-            "There must be a $file extra"
-        }
+    private val file: LocalFile? by lazy {
+        intent.getParcelableExtra(FILE_EXTRA)
+    }
+    private val fileGeoJsonContent: String? by lazy {
+        intent.getStringExtra(FILE_CONTENT_EXTRA)
     }
 
     private lateinit var geoJsonTrackData: GeoJsonTrackData
@@ -82,16 +83,26 @@ class ImportTrackActivity : BaseActivity() {
 
     private fun tryToReadFile(): GeoJsonTrackData? {
         return try {
-            require(file.extension in GEOJSON_EXTENSIONS) {
-                "The file has an unsupported extension: ${file.extension}"
-            }
+            val file = this.file
+            val fileGeoJsonContent = this.fileGeoJsonContent
 
-            require(file.size <= MAX_FILE_SIZE_BYTES) {
-                "The file is too big: ${file.size} bytes"
-            }
+            val fileContent: String
+            if (file != null) {
+                require(file.extension in GEOJSON_EXTENSIONS) {
+                    "The file has an unsupported extension: ${file.extension}"
+                }
 
-            val fileContent = contentResolver.openInputStream(file.uri).use {
-                InputStreamReader(it).readText()
+                require(file.size <= MAX_FILE_SIZE_BYTES) {
+                    "The file is too big: ${file.size} bytes"
+                }
+
+                fileContent = contentResolver.openInputStream(file.uri).use {
+                    InputStreamReader(it).readText()
+                }
+            } else if (fileGeoJsonContent != null) {
+                fileContent = fileGeoJsonContent
+            } else {
+                throw IllegalStateException("There must be a file or a GeoJSON content")
             }
 
             GeoJsonTrackData.fromFileContent(fileContent)
@@ -128,7 +139,7 @@ class ImportTrackActivity : BaseActivity() {
         track_name_edit_text.addTextChangedListener { text ->
             trackName = text?.toString()
         }
-        track_name_edit_text.setText(geoJsonTrackData.name ?: file.name)
+        track_name_edit_text.setText(geoJsonTrackData.name ?: file?.name)
     }
 
     private fun initButtons() {
@@ -174,6 +185,7 @@ class ImportTrackActivity : BaseActivity() {
 
     companion object {
         private const val FILE_EXTRA = "file"
+        private const val FILE_CONTENT_EXTRA = "geojson_data"
         private const val RESULT_EXTRA = "result"
 
         private const val MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024
@@ -181,6 +193,10 @@ class ImportTrackActivity : BaseActivity() {
 
         fun getBundle(file: LocalFile) = Bundle().apply {
             putParcelable(FILE_EXTRA, file)
+        }
+
+        fun getBundle(fileGeoJsonContent: String) = Bundle().apply {
+            putString(FILE_CONTENT_EXTRA, fileGeoJsonContent)
         }
 
         fun getResult(intent: Intent): ImportedTrackRecord {

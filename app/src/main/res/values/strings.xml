@@ -32,4 +32,7 @@
     <string name="progress_preparing_track_thumbnail">Preparing track thumbnail…</string>
     <string name="error_failed_to_import_track">Failed to import the track</string>
     <string name="clear_imported_tracks">Clear imported tracks</string>
+    <string name="import_track_from_brouter">Import track from BRouter Web</string>
+    <string name="progress_loading_brouter_track">Loading BRouter track…</string>
+    <string name="error_brouter_track_loading_failed">Failed to load a track from BRouter</string>
 </resources>

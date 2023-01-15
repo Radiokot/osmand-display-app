@@ -16,6 +16,9 @@ import com.mapbox.geojson.Geometry
 import com.mapbox.maps.*
 import com.welie.blessed.BluetoothCentralManager
 import com.welie.blessed.BluetoothCentralManagerCallback
+import mu.KotlinLogging
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.core.parameter.parametersOf
@@ -27,6 +30,7 @@ import ua.com.radiokot.osmanddisplay.base.data.storage.MemoryOnlyRepositoryCache
 import ua.com.radiokot.osmanddisplay.base.data.storage.ObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.data.storage.SharedPreferencesObjectPersistence
 import ua.com.radiokot.osmanddisplay.base.extension.addTrack
+import ua.com.radiokot.osmanddisplay.base.util.http.HttpExceptionInterceptor
 import ua.com.radiokot.osmanddisplay.base.view.ToastManager
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.BleDisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
@@ -37,9 +41,11 @@ import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceU
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFactory
+import ua.com.radiokot.osmanddisplay.features.track.brouter.logic.GetTrackFromBRouterWebUseCase
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
 import java.io.File
+import java.time.Duration
 import java.util.*
 
 val commonModules: List<Module> = listOf(
@@ -67,6 +73,13 @@ val commonModules: List<Module> = listOf(
                 // Must be an activity, not an application context.
                 companionDeviceManager = get { parametersOf(activity) },
                 filterServiceUuid = UUID.fromString(getProperty("displayServiceUuid"))
+            )
+        }
+
+        factory { (url: String) ->
+            GetTrackFromBRouterWebUseCase(
+                url = url,
+                httpClient = get()
             )
         }
     },
@@ -116,4 +129,30 @@ val commonModules: List<Module> = listOf(
             LocationServices.getFusedLocationProviderClient(androidContext())
         }
     },
+
+    // HTTP
+    module {
+        fun getLoggingInterceptor(): HttpLoggingInterceptor {
+            val logger = KotlinLogging.logger("HTTP")
+            return HttpLoggingInterceptor(logger::info).apply {
+                level =
+                    if (logger.isDebugEnabled)
+                        HttpLoggingInterceptor.Level.BODY
+                    else
+                        HttpLoggingInterceptor.Level.BASIC
+            }
+        }
+
+        fun getDefaultBuilder(): OkHttpClient.Builder {
+            return OkHttpClient.Builder()
+                .callTimeout(Duration.ofSeconds(30))
+                .addInterceptor(HttpExceptionInterceptor())
+        }
+
+        single {
+            getDefaultBuilder()
+                .addInterceptor(getLoggingInterceptor())
+                .build()
+        }
+    }
 )

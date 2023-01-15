@@ -67,6 +67,9 @@ dependencies {
     implementation 'io.github.microutils:kotlin-logging:2.1.23'
     implementation 'com.gitlab.mvysny.slf4j:slf4j-handroid:2.0.4'
 
+    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
+
     implementation 'net.osmand:android-aidl-lib:master-snapshot@aar'
     implementation 'com.github.weliem:blessed-android:2.4.0'
     implementation 'com.mapbox.maps:android:10.10.0'
