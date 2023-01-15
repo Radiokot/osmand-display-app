@@ -3,7 +3,10 @@ package ua.com.radiokot.osmanddisplay.features.track.view
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.registerForActivityResult
+import androidx.fragment.app.setFragmentResult
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.mikepenz.fastadapter.FastAdapter
@@ -17,6 +20,7 @@ import org.koin.android.ext.android.inject
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.util.localfile.OpenLocalFileContract
 import ua.com.radiokot.osmanddisplay.base.view.dateformat.DateFormats
+import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
 import java.text.DateFormat
 
@@ -42,29 +46,33 @@ class ImportedTrackSelectionBottomSheet :
             ),
             this::onTrackFileOpened
         )
+    private val trackImportLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult(),
+            this::onTrackImportResult
+        )
 
     private lateinit var compositeDisposable: CompositeDisposable
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         compositeDisposable = CompositeDisposable()
-        if (savedInstanceState == null) {
-            initList()
-            initButtons()
 
-            subscribeToTracks()
+        initList()
+        initButtons()
 
-            importedTracksRepository.updateIfNotFresh()
-        }
+        subscribeToTracks()
+
+        importedTracksRepository.updateIfNotFresh()
     }
 
     private fun initList() {
         val adapter = FastAdapter.with(itemAdapter)
         adapter.onClickListener = { _, _, item, _ ->
-            logger.debug {
-                "clicked:" +
-                        "\n$item=$item"
+            if (item.source != null) {
+                onTrackSelected(item.source)
             }
+
             false
         }
 
@@ -114,10 +122,25 @@ class ImportedTrackSelectionBottomSheet :
 
     private fun onTrackFileOpened(result: OpenLocalFileContract.Result) {
         if (result is OpenLocalFileContract.Result.Opened) {
-            startActivity(
+            trackImportLauncher.launch(
                 Intent(requireContext(), ImportTrackActivity::class.java)
                     .putExtras(ImportTrackActivity.getBundle(result.file))
             )
+        }
+    }
+
+    private fun onTrackSelected(track: ImportedTrackRecord) {
+        setFragmentResult(REQUEST_KEY, Bundle().apply {
+            putParcelable(RESULT_EXTRA, track)
+        })
+
+        dismiss()
+    }
+
+    private fun onTrackImportResult(result: ActivityResult) {
+        val data = result.data
+        if (data != null) {
+            onTrackSelected(ImportTrackActivity.getResult(data))
         }
     }
 
@@ -129,5 +152,11 @@ class ImportedTrackSelectionBottomSheet :
 
     companion object {
         const val TAG = "imported-tracks"
+        const val REQUEST_KEY = "imported-track-request"
+        private const val RESULT_EXTRA = "result"
+
+        fun getResult(bundle: Bundle): ImportedTrackRecord {
+            return bundle.getParcelable(RESULT_EXTRA)!!
+        }
     }
 }

@@ -37,6 +37,7 @@ import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceU
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
+import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
 import ua.com.radiokot.osmanddisplay.features.track.view.ImportedTrackSelectionBottomSheet
 
@@ -54,8 +55,23 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    sealed class SelectedTrack {
+        object Nothing : SelectedTrack()
+        class Selected(
+            val name: String,
+            val source: ImportedTrackRecord?
+        ) : SelectedTrack() {
+            constructor(source: ImportedTrackRecord) : this(
+                name = source.name,
+                source = source,
+            )
+        }
+    }
+
     private val selectedDevice: MutableLiveData<SelectedDevice> =
         MutableLiveData(SelectedDevice.Nothing)
+    private val selectedTrack: MutableLiveData<SelectedTrack> =
+        MutableLiveData(SelectedTrack.Nothing)
 
     private val selectedDeviceAddress: String?
         get() = (selectedDevice.value as? SelectedDevice.Selected)?.address
@@ -89,26 +105,18 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initSelectedDeviceDisplay()
+        initDeviceSelection()
+        initTrackSelection()
         initButtons()
     }
 
     private fun initButtons() {
-        selected_device_text_view.setOnClickListener {
-            scanAndSelectDevice()
-        }
-
         start_directions_broadcasting_button.setOnClickListener {
             checkPermissionAndStartDirectionsBroadcastingService()
         }
 
         stop_directions_broadcasting_button.setOnClickListener {
             stopDirectionsBroadcastingService()
-        }
-
-        map_track_text_view.setOnClickListener {
-            ImportedTrackSelectionBottomSheet()
-                .show(supportFragmentManager, ImportedTrackSelectionBottomSheet.TAG)
         }
 
         start_map_broadcasting_button.setOnClickListener {
@@ -237,6 +245,45 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    private fun initDeviceSelection() {
+        selected_device_text_view.setOnClickListener {
+            scanAndSelectDevice()
+        }
+
+        selectedDevice
+            .observe(this) { selectedDevice ->
+                when (selectedDevice) {
+                    SelectedDevice.Nothing -> {
+                        selected_device_text_view.apply {
+                            text = getString(R.string.select_display)
+                            setTextColor(
+                                MaterialColors.getColor(
+                                    this,
+                                    android.R.attr.textColorSecondary
+                                )
+                            )
+                        }
+                    }
+                    is SelectedDevice.Selected -> {
+                        selected_device_text_view.apply {
+                            text =
+                                getString(
+                                    R.string.template_selected_device_name_address,
+                                    selectedDevice.name ?: getString(R.string.device_no_name),
+                                    selectedDevice.address
+                                )
+                            setTextColor(
+                                MaterialColors.getColor(
+                                    this,
+                                    android.R.attr.textColorPrimary
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+    }
+
     private var scanAndSelectDisposable: Disposable? = null
     private fun scanAndSelectDevice() {
         scanAndSelectDisposable?.dispose()
@@ -279,39 +326,36 @@ class MainActivity : BaseActivity() {
             }
     }
 
-    private fun initSelectedDeviceDisplay() {
-        selectedDevice
-            .observe(this) { selectedDevice ->
-                when (selectedDevice) {
-                    SelectedDevice.Nothing -> {
-                        selected_device_text_view.apply {
-                            text = getString(R.string.select_display)
-                            setTextColor(
-                                MaterialColors.getColor(
-                                    this,
-                                    android.R.attr.textColorSecondary
-                                )
-                            )
-                        }
+    private fun initTrackSelection() {
+        map_track_text_view.setOnClickListener {
+            selectTrack()
+        }
+
+        supportFragmentManager.setFragmentResultListener(
+            ImportedTrackSelectionBottomSheet.REQUEST_KEY,
+            this
+        ) { _, bundle ->
+            selectedTrack.value = SelectedTrack.Selected(
+                ImportedTrackSelectionBottomSheet.getResult(bundle)
+            )
+        }
+
+        selectedTrack
+            .observe(this) { selectedTrack ->
+                when (selectedTrack) {
+                    is SelectedTrack.Nothing -> {
+                        map_track_text_view.setText(R.string.no_track)
                     }
-                    is SelectedDevice.Selected -> {
-                        selected_device_text_view.apply {
-                            text =
-                                getString(
-                                    R.string.template_selected_device_name_address,
-                                    selectedDevice.name ?: getString(R.string.device_no_name),
-                                    selectedDevice.address
-                                )
-                            setTextColor(
-                                MaterialColors.getColor(
-                                    this,
-                                    android.R.attr.textColorPrimary
-                                )
-                            )
-                        }
+                    is SelectedTrack.Selected -> {
+                        map_track_text_view.text = selectedTrack.name
                     }
                 }
             }
+    }
+
+    private fun selectTrack() {
+        ImportedTrackSelectionBottomSheet()
+            .show(supportFragmentManager, ImportedTrackSelectionBottomSheet.TAG)
     }
 
     private fun checkPermissionAndStartDirectionsBroadcastingService() {

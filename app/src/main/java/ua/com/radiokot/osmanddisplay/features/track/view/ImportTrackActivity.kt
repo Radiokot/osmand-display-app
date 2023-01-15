@@ -1,6 +1,7 @@
 package ua.com.radiokot.osmanddisplay.features.track.view
 
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
@@ -21,6 +22,7 @@ import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.di.InjectedSnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.track.data.model.GeoJsonTrackData
+import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
 import java.io.InputStreamReader
 
@@ -154,10 +156,7 @@ class ImportTrackActivity : BaseActivity() {
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
-                onSuccess = {
-                    setResult(Activity.RESULT_OK)
-                    finish()
-                },
+                onSuccess = this::setResultAndFinish,
                 onError = {
                     logger.error(it) { "importTrack(): error_occurred" }
 
@@ -167,14 +166,25 @@ class ImportTrackActivity : BaseActivity() {
             .addTo(compositeDisposable)
     }
 
+    private fun setResultAndFinish(track: ImportedTrackRecord) {
+        setResult(Activity.RESULT_OK, Intent().putExtra(RESULT_EXTRA, track))
+        finish()
+
+    }
+
     companion object {
         private const val FILE_EXTRA = "file"
+        private const val RESULT_EXTRA = "result"
 
         private const val MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024
         private val GEOJSON_EXTENSIONS = setOf("geojson", "json")
 
         fun getBundle(file: LocalFile) = Bundle().apply {
             putParcelable(FILE_EXTRA, file)
+        }
+
+        fun getResult(intent: Intent): ImportedTrackRecord {
+            return intent.getParcelableExtra(RESULT_EXTRA)!!
         }
     }
 }

@@ -1,17 +1,20 @@
 package ua.com.radiokot.osmanddisplay.features.track.data.model
 
+import android.os.Parcelable
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.GeoJson
 import com.mapbox.geojson.Geometry
+import kotlinx.android.parcel.Parcelize
 import java.io.File
 import java.util.*
 
+@Parcelize
 class ImportedTrackRecord(
     val name: String,
     val importedAt: Date,
     val thumbnailImageFile: File,
     val geoJsonFile: File
-) {
+) : Parcelable {
     companion object {
         private const val VERSION = 1
 
