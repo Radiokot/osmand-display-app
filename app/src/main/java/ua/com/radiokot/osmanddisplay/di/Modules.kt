@@ -38,6 +38,7 @@ import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceU
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFactory
+import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
 import java.io.File
 import java.io.InputStreamReader
@@ -129,7 +130,8 @@ val injectionModules: List<Module> = listOf(
     // Map
     module {
         // Snapshotter for map broadcasting
-        factory(named(InjectedSnapshotter.MAP_BROADCASTING)) { (widthDp: Float, heightDp: Float, track: String?) ->
+        factory(named(InjectedSnapshotter.MAP_BROADCASTING)) { (widthDp: Float, heightDp: Float,
+                                                                   trackGeoJson: String?) ->
             val options = MapSnapshotOptions.Builder()
                 .size(Size(widthDp, heightDp))
                 .resourceOptions(
@@ -147,15 +149,12 @@ val injectionModules: List<Module> = listOf(
             FriendlySnapshotter(get(), options, overlayOptions).apply {
                 setStyleUri(getProperty("mapStyleUri"))
 
-                if (track != null) {
+                if (trackGeoJson != null) {
                     addStyleLoadedListenerOnce {
                         style.apply {
-                            val trackInputStream =
-                                InputStreamReader(androidContext().assets.open(track))
-
                             addTrack(
                                 id = "my-track",
-                                geoJsonData = trackInputStream.use(InputStreamReader::readText),
+                                geoJsonData = trackGeoJson,
                                 directionMarker = BitmapFactory.decodeResource(
                                     androidContext().resources,
                                     R.drawable.arrow
@@ -168,7 +167,7 @@ val injectionModules: List<Module> = listOf(
         } bind Snapshotter::class
 
         // Snapshotter for track thumbnails
-        factory(named(InjectedSnapshotter.TRACK_THUMBNAIL)) { (track: GeoJson, geometry: Geometry) ->
+        factory(named(InjectedSnapshotter.TRACK_THUMBNAIL)) { (trackGeoJson: String, geometry: Geometry) ->
             val width = 350f
             val options = MapSnapshotOptions.Builder()
                 .size(Size(width, width * 0.75f))
@@ -200,7 +199,7 @@ val injectionModules: List<Module> = listOf(
                     style.apply {
                         addTrack(
                             id = "my-track",
-                            geoJsonData = track.toJson(),
+                            geoJsonData = trackGeoJson,
                             color = Color.RED,
                             width = width / 120.0,
                         )
@@ -210,13 +209,13 @@ val injectionModules: List<Module> = listOf(
         } bind Snapshotter::class
 
         // Map frame factory
-        factory<MapFrameFactory> { (track: String?) ->
+        factory<MapFrameFactory> { (track: ImportedTrackRecord?) ->
             SnapshotterMapFrameFactory(
                 snapshotter = get(named(InjectedSnapshotter.MAP_BROADCASTING)) {
                     parametersOf(
                         230f,
                         230f,
-                        track
+                        track?.geoJsonFile?.readText(Charsets.UTF_8)
                     )
                 },
                 locationMarker = BitmapFactory.decodeResource(

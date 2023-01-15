@@ -75,6 +75,8 @@ class MainActivity : BaseActivity() {
 
     private val selectedDeviceAddress: String?
         get() = (selectedDevice.value as? SelectedDevice.Selected)?.address
+    private val selectedTrackRecord: ImportedTrackRecord?
+        get() = (selectedTrack.value as? SelectedTrack.Selected)?.source
 
     private val deviceSelectionLauncher =
         registerForActivityResult(StartIntentSenderForResult(), this::onDeviceSelectionResult)
@@ -94,8 +96,6 @@ class MainActivity : BaseActivity() {
 
     private val commandSender: DisplayCommandSender
         get() = get { parametersOf(selectedDeviceAddress!!) }
-
-    private val mapFrameFactory: MapFrameFactory by inject { parametersOf("track.geojson") }
 
     private val importedTracksRepository: ImportedTracksRepository by inject()
 
@@ -148,6 +148,7 @@ class MainActivity : BaseActivity() {
                 .clear()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
+                    selectedTrack.value = SelectedTrack.Nothing
                     toastManager.short("Imported tracks cleared")
                 }
                 .addTo(compositeDisposable)
@@ -215,6 +216,9 @@ class MainActivity : BaseActivity() {
     private var captureDisposable: Disposable? = null
     private fun captureMapFrame() {
         captureDisposable?.dispose()
+
+        val mapFrameFactory: MapFrameFactory = get { parametersOf(selectedTrackRecord) }
+
         captureDisposable = mapFrameFactory
             .composeFrame(
                 location = LocationData(
@@ -226,6 +230,9 @@ class MainActivity : BaseActivity() {
             )
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
+            .doOnEvent { _, _ ->
+                mapFrameFactory.destroy()
+            }
             .subscribeBy(
                 onSuccess = this::showMapFrame,
                 onError = { toastManager.short("Error") }
@@ -385,9 +392,12 @@ class MainActivity : BaseActivity() {
 
     private fun startMapBroadcastingService() {
         val intent = Intent(this, MapBroadcastingService::class.java)
-            .apply {
-                putExtras(MapBroadcastingService.getBundle(selectedDeviceAddress!!))
-            }
+            .putExtras(
+                MapBroadcastingService.getBundle(
+                    deviceAddress = selectedDeviceAddress!!,
+                    track = selectedTrackRecord
+                )
+            )
         startForegroundService(intent)
     }
 
@@ -408,10 +418,5 @@ class MainActivity : BaseActivity() {
             permissions,
             grantResults
         )
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mapFrameFactory.destroy()
     }
 }

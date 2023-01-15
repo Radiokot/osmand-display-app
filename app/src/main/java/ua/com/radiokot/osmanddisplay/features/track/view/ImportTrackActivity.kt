@@ -103,7 +103,7 @@ class ImportTrackActivity : BaseActivity() {
 
     private fun initThumbnail() {
         val snapshotter: FriendlySnapshotter = get(named(InjectedSnapshotter.TRACK_THUMBNAIL)) {
-            parametersOf(geoJsonTrackData.geoJsonFeature, geoJsonTrackData.geometry)
+            parametersOf(geoJsonTrackData.geoJsonFeature.toJson(), geoJsonTrackData.geometry)
         }
 
         snapshotter
