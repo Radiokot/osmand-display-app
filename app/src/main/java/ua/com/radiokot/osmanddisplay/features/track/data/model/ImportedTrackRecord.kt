@@ -18,7 +18,7 @@ class ImportedTrackRecord(
         fun fromGeoJsonFile(file: File): ImportedTrackRecord {
             val geoJson = Feature.fromJson(file.readText())
 
-            val version = geoJson.getNumberProperty("version")
+            val version = geoJson.getNumberProperty("version").toInt()
             require(version == VERSION) {
                 "Unknown version $version"
             }

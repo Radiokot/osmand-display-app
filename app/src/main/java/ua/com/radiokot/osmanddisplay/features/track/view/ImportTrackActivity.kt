@@ -154,7 +154,7 @@ class ImportTrackActivity : BaseActivity() {
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
-                onComplete = {
+                onSuccess = {
                     setResult(Activity.RESULT_OK)
                     finish()
                 },
