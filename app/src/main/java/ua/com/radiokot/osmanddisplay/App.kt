@@ -11,7 +11,9 @@ import org.koin.android.ext.koin.androidFileProperties
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 import org.slf4j.impl.HandroidLoggerAdapter
-import ua.com.radiokot.osmanddisplay.di.injectionModules
+import ua.com.radiokot.osmanddisplay.di.commonModules
+import ua.com.radiokot.osmanddisplay.di.dataModules
+import ua.com.radiokot.osmanddisplay.di.mapModules
 import java.io.IOException
 
 class App : Application() {
@@ -23,7 +25,11 @@ class App : Application() {
         startKoin {
             androidLogger()
             androidContext(this@App)
-            modules(injectionModules)
+            modules(
+                commonModules
+                        + mapModules
+                        + dataModules
+            )
             androidFileProperties("app.properties")
         }
 
