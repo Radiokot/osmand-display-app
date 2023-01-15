@@ -1,7 +1,6 @@
 package ua.com.radiokot.osmanddisplay.features.track.data.storage
 
 import android.graphics.Bitmap
-import com.mapbox.geojson.Feature
 import com.mapbox.geojson.Geometry
 import io.reactivex.Completable
 import io.reactivex.Single
@@ -37,22 +36,23 @@ class ImportedTracksRepository(
         geometry: Geometry,
         thumbnail: Bitmap,
     ): Completable = Completable.defer {
-        val id = System.currentTimeMillis()
+        val importedAt = Date()
+        val id = importedAt.time.toString()
 
-        val thumbnailFileName = "${id}_thumbnail.jpg"
-        val thumbnailImageFile = File(directory.path, thumbnailFileName).apply {
+        val thumbnailImageFileName = "${id}_thumbnail.jpg"
+        val thumbnailImageFile = File(directory.path, thumbnailImageFileName).apply {
             createNewFile()
             outputStream().use { outputStream ->
                 thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
             }
         }
 
-        val geoJson = Feature.fromGeometry(geometry).apply {
-            addNumberProperty("version", 1)
-            addStringProperty("name", name)
-            addNumberProperty("imported_at", id)
-            addStringProperty("thumbnail", thumbnailFileName)
-        }
+        val geoJson = ImportedTrackRecord.createGeoJson(
+            name = name,
+            thumbnailImageFileName = thumbnailImageFileName,
+            importedAt = importedAt,
+            geometry = geometry,
+        )
 
         val geoJsonFile = File(directory.path, "${id}.geojson").apply {
             createNewFile()
@@ -62,7 +62,7 @@ class ImportedTracksRepository(
         itemsCache.add(
             ImportedTrackRecord(
                 name = name,
-                importedAt = Date(id),
+                importedAt = importedAt,
                 thumbnailImageFile = thumbnailImageFile,
                 geoJsonFile = geoJsonFile,
             )
