@@ -8,84 +8,58 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:fitsSystemWindows="true"
         android:orientation="vertical"
         tools:context=".features.main.view.MainActivity">
 
         <TextView
-            style="@style/TextAppearance.Material3.TitleMedium"
+            style="@style/TextAppearance.Material3.TitleLarge"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
             android:text="@string/display" />
 
-        <TextView
+        <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/selected_device_text_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/no_display_selected" />
-
-        <Button
-            android:id="@+id/scan_and_select_display_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/scan_and_select_device" />
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="24dp" />
-
-        <TextView
-            style="@style/TextAppearance.Material3.TitleMedium"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/directions_broadcasting_service" />
-
-        <LinearLayout
+            style="@style/TextViewWithIcon.Clickable"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/start_directions_broadcasting_button"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="2"
-                android:text="@string/start_broadcasting"
-                app:icon="@drawable/ic_play_arrow"
-                app:iconGravity="textStart" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/stop_directions_broadcasting_button"
-                style="@style/Widget.Material3.Button.IconButton.Outlined"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="@string/stop_broadcasting"
-                app:icon="@drawable/ic_stop"
-                app:iconGravity="textStart" />
-        </LinearLayout>
+            android:contentDescription="@string/display"
+            android:text="@string/select_display"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+            android:textColor="?android:textColorSecondary"
+            app:drawableStartCompat="@drawable/ic_display_connect" />
 
         <Space
             android:layout_width="0dp"
-            android:layout_height="24dp" />
+            android:layout_height="16dp" />
 
         <TextView
-            style="@style/TextAppearance.Material3.TitleMedium"
+            style="@style/TextAppearance.Material3.TitleLarge"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
             android:text="@string/map_broadcasting_service" />
 
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/map_track_text_view"
+            style="@style/TextViewWithIcon.Clickable"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:contentDescription="@string/track"
+            android:maxLines="1"
+            android:text="@string/no_track"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+            app:drawableStartCompat="@drawable/ic_track" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
             android:layout_marginTop="8dp"
             android:orientation="horizontal">
 
@@ -116,39 +90,66 @@
             android:layout_height="24dp" />
 
         <TextView
-            style="@style/TextAppearance.Material3.TitleMedium"
+            style="@style/TextAppearance.Material3.TitleLarge"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:text="@string/directions_broadcasting_service" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/start_directions_broadcasting_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="2"
+                android:text="@string/start_broadcasting"
+                app:icon="@drawable/ic_play_arrow"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/stop_directions_broadcasting_button"
+                style="@style/Widget.Material3.Button.IconButton.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/stop_broadcasting"
+                app:icon="@drawable/ic_stop"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="24dp" />
+
+        <TextView
+            style="@style/TextAppearance.Material3.TitleLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
             android:text="@string/debugging" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/open_osm_and_button"
+            android:id="@+id/clear_imported_tracks_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
             android:layout_marginTop="8dp"
-            android:text="@string/open_osm_and"
-            app:icon="@drawable/ic_navigation" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/send_random_direction_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/send_random_direction"
-            app:icon="@drawable/ic_shuffle" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/clear_screen_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/clear_screen"
+            android:text="@string/clear_imported_tracks"
             app:icon="@drawable/ic_clear" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/capture_map_frame_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
             android:layout_marginTop="8dp"
             android:text="@string/capture_map_frame"
             app:icon="@drawable/ic_map" />
@@ -157,12 +158,40 @@
             android:id="@+id/map_frame_image_view"
             android:layout_width="200dp"
             android:layout_height="200dp"
+            android:layout_marginHorizontal="16dp"
             android:layout_marginTop="8dp"
             android:importantForAccessibility="no"
             android:scaleType="fitXY"
             android:visibility="gone"
             tools:background="@android:color/darker_gray"
             tools:visibility="visible" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/open_osm_and_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/open_osm_and"
+            app:icon="@drawable/ic_navigation" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/send_random_direction_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/send_random_direction"
+            app:icon="@drawable/ic_shuffle" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/clear_screen_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/clear_screen"
+            app:icon="@drawable/ic_clear" />
 
         <Space
             android:layout_width="0dp"

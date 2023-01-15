@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".features.track.view.ImportTrackActivity">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp">
+
+        <ImageView
+            android:id="@+id/track_thumbnail_image_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="16dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/track_thumbnail"
+            app:layout_constrainedHeight="true"
+            app:layout_constraintDimensionRatio="H,4:3"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/thumbnail_preparing_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/progress_preparing_track_thumbnail"
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            app:layout_constraintBottom_toBottomOf="@id/track_thumbnail_image_view"
+            app:layout_constraintEnd_toEndOf="@id/track_thumbnail_image_view"
+            app:layout_constraintStart_toStartOf="@id/track_thumbnail_image_view"
+            app:layout_constraintTop_toTopOf="@id/track_thumbnail_image_view" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/track_name_text_input_layout"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="24dp"
+            android:hint="@string/track_name"
+            app:layout_constraintBottom_toTopOf="@id/import_track_button"
+            app:layout_constraintTop_toBottomOf="@id/track_thumbnail_image_view"
+            app:layout_constraintVertical_chainStyle="spread_inside">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/track_name_edit_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/import_track_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginVertical="24dp"
+            android:text="@string/import_track_short"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/track_name_text_input_layout"
+            app:layout_constraintVertical_weight="12" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

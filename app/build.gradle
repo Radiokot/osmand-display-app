@@ -49,10 +49,11 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     implementation 'androidx.core:core-ktx:1.7.0'
-    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'com.google.android.material:material:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.android.gms:play-services-location:21.0.1'
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
 
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.1'
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.14.1'
@@ -69,6 +70,8 @@ dependencies {
     implementation 'net.osmand:android-aidl-lib:master-snapshot@aar'
     implementation 'com.github.weliem:blessed-android:2.4.0'
     implementation 'com.mapbox.maps:android:10.10.0'
+    implementation 'com.mikepenz:fastadapter:5.7.0'
+    implementation 'com.squareup.picasso:picasso:2.8'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

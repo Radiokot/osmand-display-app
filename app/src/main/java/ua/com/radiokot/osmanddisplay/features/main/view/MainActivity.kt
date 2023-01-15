@@ -13,11 +13,9 @@ import android.view.View
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
-import com.google.android.material.elevation.SurfaceColors
+import com.google.android.material.color.MaterialColors
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
@@ -30,7 +28,7 @@ import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.util.PermissionManager
-import ua.com.radiokot.osmanddisplay.base.view.ToastManager
+import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DirectionsBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
@@ -39,8 +37,11 @@ import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceU
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
+import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
+import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
+import ua.com.radiokot.osmanddisplay.features.track.view.ImportedTrackSelectionBottomSheet
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
     sealed class SelectedDevice {
         object Nothing : SelectedDevice()
         class Selected(
@@ -54,18 +55,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    sealed class SelectedTrack {
+        object Nothing : SelectedTrack()
+        class Selected(
+            val name: String,
+            val source: ImportedTrackRecord?
+        ) : SelectedTrack() {
+            constructor(source: ImportedTrackRecord) : this(
+                name = source.name,
+                source = source,
+            )
+        }
+    }
+
     private val selectedDevice: MutableLiveData<SelectedDevice> =
         MutableLiveData(SelectedDevice.Nothing)
+    private val selectedTrack: MutableLiveData<SelectedTrack> =
+        MutableLiveData(SelectedTrack.Nothing)
 
     private val selectedDeviceAddress: String?
         get() = (selectedDevice.value as? SelectedDevice.Selected)?.address
+    private val selectedTrackRecord: ImportedTrackRecord?
+        get() = (selectedTrack.value as? SelectedTrack.Selected)?.source
 
     private val deviceSelectionLauncher =
         registerForActivityResult(StartIntentSenderForResult(), this::onDeviceSelectionResult)
-
-    private val compositeDisposable = CompositeDisposable()
-
-    private val toastManager: ToastManager by inject()
 
     private val bluetoothConnectPermission: PermissionManager by lazy {
         PermissionManager("android.permission.BLUETOOTH_CONNECT", 332)
@@ -83,7 +97,7 @@ class MainActivity : AppCompatActivity() {
     private val commandSender: DisplayCommandSender
         get() = get { parametersOf(selectedDeviceAddress!!) }
 
-    private val mapFrameFactory: MapFrameFactory by inject { parametersOf("track.geojson") }
+    private val importedTracksRepository: ImportedTracksRepository by inject()
 
     private val logger = KotlinLogging.logger("MainActivity@${hashCode()}")
 
@@ -91,20 +105,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initColor()
-        initSelectedDeviceDisplay()
+        initDeviceSelection()
+        initTrackSelection()
         initButtons()
     }
 
-    private fun initColor() {
-        window.statusBarColor = SurfaceColors.SURFACE_2.getColor(this)
-    }
-
     private fun initButtons() {
-        scan_and_select_display_button.setOnClickListener {
-            scanAndSelectDevice()
-        }
-
         start_directions_broadcasting_button.setOnClickListener {
             checkPermissionAndStartDirectionsBroadcastingService()
         }
@@ -135,6 +141,17 @@ class MainActivity : AppCompatActivity() {
 
         capture_map_frame_button.setOnClickListener {
             captureMapFrame()
+        }
+
+        clear_imported_tracks_button.setOnClickListener {
+            importedTracksRepository
+                .clear()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    selectedTrack.value = SelectedTrack.Nothing
+                    toastManager.short("Imported tracks cleared")
+                }
+                .addTo(compositeDisposable)
         }
 
         selectedDevice
@@ -199,6 +216,9 @@ class MainActivity : AppCompatActivity() {
     private var captureDisposable: Disposable? = null
     private fun captureMapFrame() {
         captureDisposable?.dispose()
+
+        val mapFrameFactory: MapFrameFactory = get { parametersOf(selectedTrackRecord) }
+
         captureDisposable = mapFrameFactory
             .composeFrame(
                 location = LocationData(
@@ -210,6 +230,9 @@ class MainActivity : AppCompatActivity() {
             )
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
+            .doOnEvent { _, _ ->
+                mapFrameFactory.destroy()
+            }
             .subscribeBy(
                 onSuccess = this::showMapFrame,
                 onError = { toastManager.short("Error") }
@@ -227,6 +250,45 @@ class MainActivity : AppCompatActivity() {
             visibility = View.VISIBLE
             setImageBitmap(frame)
         }
+    }
+
+    private fun initDeviceSelection() {
+        selected_device_text_view.setOnClickListener {
+            scanAndSelectDevice()
+        }
+
+        selectedDevice
+            .observe(this) { selectedDevice ->
+                when (selectedDevice) {
+                    SelectedDevice.Nothing -> {
+                        selected_device_text_view.apply {
+                            text = getString(R.string.select_display)
+                            setTextColor(
+                                MaterialColors.getColor(
+                                    this,
+                                    android.R.attr.textColorSecondary
+                                )
+                            )
+                        }
+                    }
+                    is SelectedDevice.Selected -> {
+                        selected_device_text_view.apply {
+                            text =
+                                getString(
+                                    R.string.template_selected_device_name_address,
+                                    selectedDevice.name ?: getString(R.string.device_no_name),
+                                    selectedDevice.address
+                                )
+                            setTextColor(
+                                MaterialColors.getColor(
+                                    this,
+                                    android.R.attr.textColorPrimary
+                                )
+                            )
+                        }
+                    }
+                }
+            }
     }
 
     private var scanAndSelectDisposable: Disposable? = null
@@ -271,23 +333,36 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    private fun initSelectedDeviceDisplay() {
-        selectedDevice
-            .observe(this) { selectedDevice ->
-                when (selectedDevice) {
-                    SelectedDevice.Nothing -> {
-                        selected_device_text_view.text = getString(R.string.no_display_selected)
+    private fun initTrackSelection() {
+        map_track_text_view.setOnClickListener {
+            selectTrack()
+        }
+
+        supportFragmentManager.setFragmentResultListener(
+            ImportedTrackSelectionBottomSheet.REQUEST_KEY,
+            this
+        ) { _, bundle ->
+            selectedTrack.value = SelectedTrack.Selected(
+                ImportedTrackSelectionBottomSheet.getResult(bundle)
+            )
+        }
+
+        selectedTrack
+            .observe(this) { selectedTrack ->
+                when (selectedTrack) {
+                    is SelectedTrack.Nothing -> {
+                        map_track_text_view.setText(R.string.no_track)
                     }
-                    is SelectedDevice.Selected -> {
-                        selected_device_text_view.text =
-                            getString(
-                                R.string.template_selected_device_name_address,
-                                selectedDevice.name ?: getString(R.string.device_no_name),
-                                selectedDevice.address
-                            )
+                    is SelectedTrack.Selected -> {
+                        map_track_text_view.text = selectedTrack.name
                     }
                 }
             }
+    }
+
+    private fun selectTrack() {
+        ImportedTrackSelectionBottomSheet()
+            .show(supportFragmentManager, ImportedTrackSelectionBottomSheet.TAG)
     }
 
     private fun checkPermissionAndStartDirectionsBroadcastingService() {
@@ -317,9 +392,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun startMapBroadcastingService() {
         val intent = Intent(this, MapBroadcastingService::class.java)
-            .apply {
-                putExtras(MapBroadcastingService.getBundle(selectedDeviceAddress!!))
-            }
+            .putExtras(
+                MapBroadcastingService.getBundle(
+                    deviceAddress = selectedDeviceAddress!!,
+                    track = selectedTrackRecord
+                )
+            )
         startForegroundService(intent)
     }
 
@@ -340,11 +418,5 @@ class MainActivity : AppCompatActivity() {
             permissions,
             grantResults
         )
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        compositeDisposable.dispose()
-        mapFrameFactory.destroy()
     }
 }

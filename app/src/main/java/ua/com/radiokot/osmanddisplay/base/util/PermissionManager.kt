@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 /**
  * Handles specified Android runtime permission.
  */
+@Deprecated("Replace it with an activity result contract")
 class PermissionManager(
     private val permissions: Array<String>,
     private val requestCode: Int

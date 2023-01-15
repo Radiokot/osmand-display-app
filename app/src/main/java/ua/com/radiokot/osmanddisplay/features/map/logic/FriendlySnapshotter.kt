@@ -1,7 +1,10 @@
 package ua.com.radiokot.osmanddisplay.features.map.logic
 
 import android.content.Context
+import android.graphics.Bitmap
 import com.mapbox.maps.*
+import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
 
@@ -34,7 +37,15 @@ class FriendlySnapshotter(
     val isStyleLoaded: Boolean
         get() = style.isStyleLoaded
 
-    val style = createStyle(this, context)
+    val coreSnapshotter =
+        Snapshotter::class.declaredMemberProperties
+            .first { it.name == "coreSnapshotter" }
+            .run {
+                isAccessible = true
+                get(this@FriendlySnapshotter).also { isAccessible = false }
+            } as MapSnapshotterInterface
+
+    val style = createStyle(coreSnapshotter, context)
 
     init {
         subscribe({ event ->
@@ -80,21 +91,31 @@ class FriendlySnapshotter(
         styleLoadedListeners.remove(listener)
     }
 
+    /**
+     * @return Single emitting the snapshot bitmap.
+     * Subscribed on the main thread.
+     */
+    fun getSnapshotBitmap(): Single<Bitmap> = Single.create { emitter ->
+        start { snapshot ->
+            val bitmap = snapshot?.bitmap()
+            if (bitmap == null) {
+//                logger.warn { "getMapSnapshot(): snapshotter_not_ready" }
+                emitter.tryOnError(IllegalStateException("Snapshotter is not ready"))
+            } else {
+//                logger.debug { "getMapSnapshot(): got_snapshot" }
+                emitter.onSuccess(bitmap)
+            }
+        }
+    }.subscribeOn(AndroidSchedulers.mainThread())
+
     private companion object {
         private fun createStyle(
-            snapshotter: Snapshotter,
+            styleManager: StyleManagerInterface,
             context: Context,
         ): Style {
-            val coreSnapshotter = Snapshotter::class.declaredMemberProperties
-                .first { it.name == "coreSnapshotter" }
-                .run {
-                    isAccessible = true
-                    get(snapshotter).also { isAccessible = false }
-                }
-
             val pixelRatio = context.resources.displayMetrics.density
 
-            return Style::class.constructors.first().call(coreSnapshotter, pixelRatio)
+            return Style::class.constructors.first().call(styleManager, pixelRatio)
         }
     }
 }

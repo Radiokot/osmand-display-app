@@ -32,6 +32,7 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandS
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.NotificationChannelHelper
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
+import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -71,7 +72,6 @@ class MapBroadcastingService : Service() {
     override fun onCreate() {
         super.onCreate()
         compositeDisposable = CompositeDisposable()
-        mapFrameFactory = get { parametersOf("track.geojson") }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -79,18 +79,18 @@ class MapBroadcastingService : Service() {
 
         startForeground(NOTIFICATION_ID, getNotification())
 
-        val deviceAddress = requireNotNull(intent?.getStringExtra(DEVICE_ADDRESS_KEY)) {
-            "$DEVICE_ADDRESS_KEY extra must be set"
+        val deviceAddress = requireNotNull(intent?.getStringExtra(DEVICE_ADDRESS_EXTRA)) {
+            "$DEVICE_ADDRESS_EXTRA extra must be set"
         }
+        val track = intent?.getParcelableExtra<ImportedTrackRecord>(TRACK_EXTRA)
 
         logger.debug {
             "onStartCommand(): starting:" +
                     "\ndevice_address=$deviceAddress"
         }
 
-        commandSender = get {
-            parametersOf(deviceAddress)
-        }
+        commandSender = get { parametersOf(deviceAddress) }
+        mapFrameFactory = get { parametersOf(track) }
 
         subscribeToLocations()
 
@@ -269,10 +269,15 @@ class MapBroadcastingService : Service() {
         private const val PREDICTION_SPEED_THRESHOLD_MS = 2.5
         private const val AVERAGE_FRAME_PROCESSING_TIME_S = 6
 
-        private const val DEVICE_ADDRESS_KEY = "device_address"
+        private const val DEVICE_ADDRESS_EXTRA = "device_address"
+        private const val TRACK_EXTRA = "track"
 
-        fun getBundle(deviceAddress: String) = Bundle().apply {
-            putString(DEVICE_ADDRESS_KEY, deviceAddress)
+        fun getBundle(
+            deviceAddress: String,
+            track: ImportedTrackRecord?
+        ) = Bundle().apply {
+            putString(DEVICE_ADDRESS_EXTRA, deviceAddress)
+            putParcelable(TRACK_EXTRA, track)
         }
     }
 }

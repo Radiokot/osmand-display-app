@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="TextViewWithIcon">
+        <item name="android:drawablePadding">16dp</item>
+        <item name="drawableTint">?attr/colorOnSurface</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <style name="TextViewWithIcon.Clickable">
+        <item name="android:drawablePadding">16dp</item>
+        <item name="drawableTint">?attr/colorOnSurface</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingHorizontal">16dp</item>
+        <item name="android:paddingVertical">8dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:background">?selectableItemBackground</item>
+    </style>
+
+    <style name="ModalBottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="behavior_saveFlags">all</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.LargeComponent</item>
+    </style>
+
+    <style name="BorderlessImageButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:background">?selectableItemBackgroundBorderless</item>
+    </style>
+
+</resources>

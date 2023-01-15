@@ -16,6 +16,8 @@ import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 fun Style.addTrack(
     id: String,
     geoJsonData: String,
+    color: Int = Color.WHITE,
+    width: Double = 18.0,
     directionMarker: Bitmap? = null,
 ) = apply {
     addSource(geoJsonSource(id) {
@@ -25,8 +27,8 @@ fun Style.addTrack(
     addLayer(lineLayer("$id-line", id) {
         lineCap(LineCap.ROUND)
         lineJoin(LineJoin.ROUND)
-        lineWidth(18.0)
-        lineColor(Color.WHITE)
+        lineWidth(width)
+        lineColor(color)
     })
 
     if (directionMarker != null) {

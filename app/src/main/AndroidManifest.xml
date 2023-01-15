@@ -29,7 +29,6 @@
         <service
             android:name=".features.broadcasting.logic.DirectionsBroadcastingService"
             android:exported="false" />
-
         <service
             android:name=".features.map.logic.MapBroadcastingService"
             android:exported="false"
@@ -45,6 +44,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".features.track.view.ImportTrackActivity"
+            android:exported="false"
+            android:label="@string/import_track" />
 
     </application>
 
