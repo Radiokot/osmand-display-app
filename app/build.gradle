@@ -12,12 +12,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace 'ua.com.radiokot.osmanddisplay'
-    compileSdk 32
+    compileSdk 33
 
     defaultConfig {
         applicationId "ua.com.radiokot.osmanddisplay"
         minSdk 26
-        targetSdk 32
+        targetSdk 33
         versionCode 1
         versionName "0.1"
 

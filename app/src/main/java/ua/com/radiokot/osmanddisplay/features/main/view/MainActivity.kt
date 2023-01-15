@@ -1,18 +1,18 @@
 package ua.com.radiokot.osmanddisplay.features.main.view
 
-import android.Manifest
 import android.app.Activity
 import android.bluetooth.le.ScanResult
 import android.companion.CompanionDeviceManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
+import androidx.activity.result.registerForActivityResult
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.color.MaterialColors
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -27,7 +27,6 @@ import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
-import ua.com.radiokot.osmanddisplay.base.util.PermissionManager
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DirectionsBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
@@ -81,18 +80,25 @@ class MainActivity : BaseActivity() {
     private val deviceSelectionLauncher =
         registerForActivityResult(StartIntentSenderForResult(), this::onDeviceSelectionResult)
 
-    private val bluetoothConnectPermission: PermissionManager by lazy {
-        PermissionManager("android.permission.BLUETOOTH_CONNECT", 332)
-    }
-
-    private val locationAndBluetoothConnectPermission: PermissionManager by lazy {
-        PermissionManager(
+    private val directionsBroadcastingPermissionsLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
             arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                "android.permission.BLUETOOTH_CONNECT"
-            ), 333
+                "android.permission.BLUETOOTH_CONNECT",
+                "android.permission.POST_NOTIFICATIONS"
+            ),
+            this::onDirectionsPermissionsGranted
         )
-    }
+    private val mapBroadcastingPermissionsLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+            arrayOf(
+                "android.permission.ACCESS_FINE_LOCATION",
+                "android.permission.BLUETOOTH_CONNECT",
+                "android.permission.POST_NOTIFICATIONS"
+            ),
+            this::onMapBroadcastingPermissionsGranted
+        )
 
     private val commandSender: DisplayCommandSender
         get() = get { parametersOf(selectedDeviceAddress!!) }
@@ -112,7 +118,7 @@ class MainActivity : BaseActivity() {
 
     private fun initButtons() {
         start_directions_broadcasting_button.setOnClickListener {
-            checkPermissionAndStartDirectionsBroadcastingService()
+            directionsBroadcastingPermissionsLauncher.launch(Unit)
         }
 
         stop_directions_broadcasting_button.setOnClickListener {
@@ -120,7 +126,7 @@ class MainActivity : BaseActivity() {
         }
 
         start_map_broadcasting_button.setOnClickListener {
-            checkPermissionAndStartMapBroadcastingService()
+            mapBroadcastingPermissionsLauncher.launch(Unit)
         }
 
         stop_map_broadcasting_button.setOnClickListener {
@@ -365,11 +371,11 @@ class MainActivity : BaseActivity() {
             .show(supportFragmentManager, ImportedTrackSelectionBottomSheet.TAG)
     }
 
-    private fun checkPermissionAndStartDirectionsBroadcastingService() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            bluetoothConnectPermission.check(this, this::startDirectionsBroadcastingService)
-        } else {
+    private fun onDirectionsPermissionsGranted(result: Map<String, Boolean>) {
+        if (result.values.all { it }) {
             startDirectionsBroadcastingService()
+        } else {
+            toastManager.short(R.string.error_all_permissions_are_required)
         }
     }
 
@@ -386,8 +392,12 @@ class MainActivity : BaseActivity() {
         stopService(intent)
     }
 
-    private fun checkPermissionAndStartMapBroadcastingService() {
-        locationAndBluetoothConnectPermission.check(this, this::startMapBroadcastingService)
+    private fun onMapBroadcastingPermissionsGranted(result: Map<String, Boolean>) {
+        if (result.values.all { it }) {
+            startMapBroadcastingService()
+        } else {
+            toastManager.short(R.string.error_all_permissions_are_required)
+        }
     }
 
     private fun startMapBroadcastingService() {
@@ -404,19 +414,5 @@ class MainActivity : BaseActivity() {
     private fun stopMapBroadcastingService() {
         val intent = Intent(this, MapBroadcastingService::class.java)
         stopService(intent)
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        bluetoothConnectPermission.handlePermissionResult(requestCode, permissions, grantResults)
-        locationAndBluetoothConnectPermission.handlePermissionResult(
-            requestCode,
-            permissions,
-            grantResults
-        )
     }
 }

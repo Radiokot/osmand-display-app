@@ -44,15 +44,15 @@ class ScanAndSelectBleDeviceUseCase(
                 .setSingleDevice(true)
                 .build(),
             object : CompanionDeviceManager.Callback() {
-                override fun onDeviceFound(chooserLauncher: IntentSender) {
+                override fun onAssociationPending(intentSender: IntentSender) {
                     if (!isDisposed) {
-                        emitter.onSuccess(chooserLauncher)
+                        emitter.onSuccess(intentSender)
                     }
                 }
 
-                override fun onFailure(error: CharSequence) {
+                override fun onFailure(error: CharSequence?) {
                     if (!isDisposed) {
-                        emitter.tryOnError(Exception(error.toString()))
+                        emitter.tryOnError(Exception(error?.toString()))
                     }
                 }
             },
