@@ -1,4 +1,4 @@
-# OsmAnd Display app
+# <img src="https://github.com/Radiokot/osmand-display-app/raw/main/app/src/main/res/mipmap-hdpi/ic_launcher.png" alt="Icon" style="vertical-align: bottom; height: 1.2em;"/> OsmAnd Display app
 An Android application for the [wireless OsmAnd navigation display](https://github.com/Radiokot/osmand-display).
 The communication is done over the BLE serial.
 
