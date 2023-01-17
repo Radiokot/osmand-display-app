@@ -22,10 +22,10 @@ val mapModules: List<Module> = listOf(
     // Snapshotter
     module {
         // Snapshotter for map broadcasting
-        factory(named(InjectedSnapshotter.MAP_BROADCASTING)) { (widthDp: Float, heightDp: Float,
+        factory(named(InjectedSnapshotter.MAP_BROADCASTING)) { (widthPx: Int, heightPx: Int,
                                                                    trackGeoJson: String?) ->
             val options = MapSnapshotOptions.Builder()
-                .size(Size(widthDp, heightDp))
+                .size(Size(widthPx.toFloat(), heightPx.toFloat()))
                 .resourceOptions(
                     ResourceOptions.Builder()
                         .accessToken(BuildConfig.MAPBOX_PUBLIC_TOKEN)
@@ -104,11 +104,14 @@ val mapModules: List<Module> = listOf(
     // Map frame factory
     module {
         factory<MapFrameFactory> { (track: ImportedTrackRecord?) ->
+            val snapshotSizePx = 450
+            val frameSizePx = 200
+
             SnapshotterMapFrameFactory(
                 snapshotter = get(named(InjectedSnapshotter.MAP_BROADCASTING)) {
                     parametersOf(
-                        230f,
-                        230f,
+                        snapshotSizePx,
+                        snapshotSizePx,
                         track?.geoJsonFile?.readText(Charsets.UTF_8)
                     )
                 },
@@ -116,8 +119,8 @@ val mapModules: List<Module> = listOf(
                     androidContext().resources,
                     R.drawable.location
                 ),
-                frameWidthPx = 200,
-                frameHeightPx = 200,
+                frameWidthPx = frameSizePx,
+                frameHeightPx = frameSizePx,
             )
         }
     }

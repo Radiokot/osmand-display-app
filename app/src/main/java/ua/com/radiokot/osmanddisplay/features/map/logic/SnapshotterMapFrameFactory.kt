@@ -10,8 +10,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.toSingle
 import mu.KotlinLogging
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlin.math.roundToInt
 
 /**
  * Composes map frames based on [FriendlySnapshotter] map snapshots.
@@ -98,6 +97,7 @@ class SnapshotterMapFrameFactory(
             CameraOptions.Builder()
                 .center(location.toPoint())
                 .zoom(zoom)
+                .bearing(location.bearing)
                 .build()
         )
 
@@ -106,7 +106,11 @@ class SnapshotterMapFrameFactory(
                 logger.warn { "getMapSnapshot(): snapshotter_not_ready" }
             }
             .doOnSuccess {
-                logger.debug { "getMapSnapshot(): got_snapshot" }
+                logger.debug {
+                    "getMapSnapshot(): got_snapshot:" +
+                            "\nwidth=${it.width}," +
+                            "\nheight=${it.height}"
+                }
             }
     }
 
@@ -114,35 +118,45 @@ class SnapshotterMapFrameFactory(
         snapshot: Bitmap,
         bearing: Double?,
     ): Single<Bitmap> = {
-        // Resize the snapshot to match the display size.
-        val frame = Bitmap.createScaledBitmap(
+        val m = 1.15
+
+        val mFrameWidth = (frameWidthPx * m).toInt()
+        val mFrameHeight = (frameHeightPx * m).toInt()
+        val centerYOffset =
+            if (bearing != null) {
+                (mFrameHeight * 0.65 / 2).roundToInt()
+            } else {
+                0
+            }
+
+        val frame = Bitmap.createBitmap(
             snapshot,
-            frameWidthPx,
-            frameHeightPx,
-            false
+            (snapshot.width - mFrameWidth) / 2,
+            (snapshot.height - mFrameHeight) / 2 - centerYOffset,
+            mFrameWidth,
+            mFrameHeight
         )
         snapshot.recycle()
 
         val canvas = Canvas(frame)
-        val centerX = canvas.width / 2f
-        val centerY = canvas.height / 2f
+        val locationX = canvas.width / 2f
+        val locationY = canvas.height / 2f + centerYOffset
 
         // Draw the location marker, which is always in the center.
         canvas.drawBitmap(
             locationMarker,
-            centerX - locationMarker.width / 2f,
-            centerY - locationMarker.height / 2f,
+            locationX - locationMarker.width / 2f,
+            locationY - locationMarker.height / 2f,
             null
         )
 
         // Draw the bearing indicator as a line pointing from the center.
         if (bearing != null) {
             canvas.drawLine(
-                centerX,
-                centerY,
-                centerX + BEARING_CIRCLE_RADIUS * sin(Math.toRadians(bearing)).toFloat(),
-                // Subtract the Y coordinate as canvas Y axis is top-to-bottom.
-                centerY - BEARING_CIRCLE_RADIUS * cos(Math.toRadians(bearing)).toFloat(),
+                locationX,
+                locationY,
+                locationX,
+                locationY - BEARING_CIRCLE_RADIUS,
                 Paint().apply {
                     color = Color.BLACK
                     strokeWidth = BEARING_LINE_WIDTH
@@ -150,7 +164,8 @@ class SnapshotterMapFrameFactory(
             )
         }
 
-        frame
+        Bitmap.createScaledBitmap(frame, frameWidthPx, frameHeightPx, false)
+            .also { frame.recycle() }
     }.toSingle()
 
     override fun destroy() {
