@@ -27,6 +27,7 @@ import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
+import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DirectionsBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
@@ -106,6 +107,11 @@ class MainActivity : BaseActivity() {
     private val importedTracksRepository: ImportedTracksRepository by inject()
 
     private val logger = KotlinLogging.logger("MainActivity@${hashCode()}")
+
+    private val mapCameraZoom: Double =
+        requireNotNull(getKoin().getNumericProperty("mapCameraZoom"))
+    private val mapFramePostScale: Double =
+        getKoin().getNumericProperty("mapFramePostScale", 1.0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -230,9 +236,14 @@ class MainActivity : BaseActivity() {
                 location = LocationData(
                     lng = 35.07203,
                     lat = 48.45664,
-                    bearing = (1..360).random().toDouble(),
+                    bearing =
+                    if (randomize_bearing_check_box.isChecked)
+                        (1..360).random().toDouble()
+                    else
+                        null,
                 ),
-                zoom = 15.3
+                cameraZoom = mapCameraZoom,
+                postScale = mapFramePostScale,
             )
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())

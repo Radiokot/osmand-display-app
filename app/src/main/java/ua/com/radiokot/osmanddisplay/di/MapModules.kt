@@ -1,5 +1,6 @@
 package ua.com.radiokot.osmanddisplay.di
 
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import com.mapbox.geojson.Geometry
@@ -116,7 +117,7 @@ val mapModules: List<Module> = listOf(
                     )
                 },
                 locationMarker = BitmapFactory.decodeResource(
-                    androidContext().resources,
+                    get<Context>().resources,
                     R.drawable.location
                 ),
                 frameWidthPx = frameSizePx,

@@ -26,16 +26,18 @@ class SnapshotterMapFrameFactory(
 
     override fun composeFrame(
         location: LocationData,
-        zoom: Double
+        cameraZoom: Double,
+        postScale: Double,
     ): Single<Bitmap> {
         return waitForSnapshotterSetup()
             .flatMap {
-                getMapSnapshot(location, zoom)
+                getMapSnapshot(location, cameraZoom)
             }
             .flatMap { snapshot ->
                 composeFrame(
                     snapshot = snapshot,
                     bearing = location.bearing,
+                    postScale = postScale,
                 )
             }
     }
@@ -97,7 +99,7 @@ class SnapshotterMapFrameFactory(
             CameraOptions.Builder()
                 .center(location.toPoint())
                 .zoom(zoom)
-                .bearing(location.bearing)
+                .bearing(location.bearing ?: 0.0)
                 .build()
         )
 
@@ -117,32 +119,37 @@ class SnapshotterMapFrameFactory(
     private fun composeFrame(
         snapshot: Bitmap,
         bearing: Double?,
+        postScale: Double,
     ): Single<Bitmap> = {
-        val m = 1.15
+        // The lower the post scale, the bigger area of the snapshot
+        // we have to fit into the frame
+        val scaledFrameWidth = (frameWidthPx / postScale).toInt()
+        val scaledFrameHeight = (frameHeightPx / postScale).toInt()
 
-        val mFrameWidth = (frameWidthPx * m).toInt()
-        val mFrameHeight = (frameHeightPx * m).toInt()
+        // If there is a bearing, offset the center to see
+        // more upcoming path.
         val centerYOffset =
-            if (bearing != null) {
-                (mFrameHeight * 0.65 / 2).roundToInt()
-            } else {
+            if (bearing != null && bearing != 0.0)
+                (scaledFrameHeight * 0.65 / 2).roundToInt()
+            else
                 0
-            }
 
-        val frame = Bitmap.createBitmap(
+        // Create a frame which is bigger than the required
+        // frame size to fit more area.
+        val scaledFrame = Bitmap.createBitmap(
             snapshot,
-            (snapshot.width - mFrameWidth) / 2,
-            (snapshot.height - mFrameHeight) / 2 - centerYOffset,
-            mFrameWidth,
-            mFrameHeight
+            (snapshot.width - scaledFrameWidth) / 2,
+            (snapshot.height - scaledFrameHeight) / 2 - centerYOffset,
+            scaledFrameWidth,
+            scaledFrameHeight
         )
         snapshot.recycle()
 
-        val canvas = Canvas(frame)
+        val canvas = Canvas(scaledFrame)
         val locationX = canvas.width / 2f
         val locationY = canvas.height / 2f + centerYOffset
 
-        // Draw the location marker, which is always in the center.
+        // Draw the location marker.
         canvas.drawBitmap(
             locationMarker,
             locationX - locationMarker.width / 2f,
@@ -150,22 +157,27 @@ class SnapshotterMapFrameFactory(
             null
         )
 
-        // Draw the bearing indicator as a line pointing from the center.
-        if (bearing != null) {
-            canvas.drawLine(
-                locationX,
-                locationY,
-                locationX,
-                locationY - BEARING_CIRCLE_RADIUS,
-                Paint().apply {
-                    color = Color.BLACK
-                    strokeWidth = BEARING_LINE_WIDTH
-                }
-            )
-        }
+        // Draw the bearing indicator on the marker
+        // as a line pointing from the center.
+        canvas.drawLine(
+            locationX,
+            locationY,
+            locationX,
+            locationY - BEARING_CIRCLE_RADIUS,
+            Paint().apply {
+                color = Color.BLACK
+                strokeWidth = BEARING_LINE_WIDTH
+            }
+        )
 
-        Bitmap.createScaledBitmap(frame, frameWidthPx, frameHeightPx, false)
-            .also { frame.recycle() }
+        // Return the result in the required size.
+        Bitmap.createScaledBitmap(
+            scaledFrame,
+            frameWidthPx,
+            frameHeightPx,
+            false
+        )
+            .also { scaledFrame.recycle() }
     }.toSingle()
 
     override fun destroy() {

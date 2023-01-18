@@ -36,4 +36,5 @@
     <string name="progress_loading_brouter_track">Loading BRouter track…</string>
     <string name="error_brouter_track_loading_failed">Failed to load a track from BRouter</string>
     <string name="error_all_permissions_are_required">All the permissions are required</string>
+    <string name="randomize_bearing">Randomize bearing</string>
 </resources>
