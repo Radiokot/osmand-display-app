@@ -25,9 +25,12 @@ import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
 import mu.KotlinLogging
 import org.koin.android.ext.android.get
+import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
+import org.koin.core.component.KoinComponent
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
+import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.NotificationChannelHelper
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
@@ -36,8 +39,13 @@ import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackReco
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class MapBroadcastingService : Service() {
+class MapBroadcastingService : Service(), KoinComponent {
     private val logger = KotlinLogging.logger("MapBcService@${hashCode()}")
+
+    private val mapCameraZoom: Double =
+        requireNotNull(getKoin().getNumericProperty("mapCameraZoom"))
+    private val mapFramePostScale: Double =
+        getKoin().getNumericProperty("mapFramePostScale", 1.0)
 
     private val notificationManager: NotificationManager by lazy {
         getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -166,7 +174,8 @@ class MapBroadcastingService : Service() {
                 mapFrameFactory
                     .composeFrame(
                         location = location,
-                        zoom = MAP_CAMERA_ZOOM,
+                        cameraZoom = mapCameraZoom,
+                        postScale = mapFramePostScale,
                     )
                     .timeout(5, TimeUnit.SECONDS, Schedulers.io())
                     .map { it to location }
@@ -265,7 +274,6 @@ class MapBroadcastingService : Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 2
-        private const val MAP_CAMERA_ZOOM = 15.3
         private const val PREDICTION_SPEED_THRESHOLD_MS = 2.5
         private const val AVERAGE_FRAME_PROCESSING_TIME_S = 6
 
