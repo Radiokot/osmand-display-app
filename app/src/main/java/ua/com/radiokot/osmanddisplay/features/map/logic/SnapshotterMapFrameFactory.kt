@@ -99,7 +99,7 @@ class SnapshotterMapFrameFactory(
             CameraOptions.Builder()
                 .center(location.toPoint())
                 .zoom(zoom)
-                .bearing(location.bearing ?: 0.0)
+                .bearing(location.bearing)
                 .build()
         )
 
@@ -129,7 +129,7 @@ class SnapshotterMapFrameFactory(
         // If there is a bearing, offset the center to see
         // more upcoming path.
         val centerYOffset =
-            if (bearing != null && bearing != 0.0)
+            if (bearing != null)
                 (scaledFrameHeight * 0.65 / 2).roundToInt()
             else
                 0
@@ -159,16 +159,18 @@ class SnapshotterMapFrameFactory(
 
         // Draw the bearing indicator on the marker
         // as a line pointing from the center.
-        canvas.drawLine(
-            locationX,
-            locationY,
-            locationX,
-            locationY - BEARING_CIRCLE_RADIUS,
-            Paint().apply {
-                color = Color.BLACK
-                strokeWidth = BEARING_LINE_WIDTH
-            }
-        )
+        if (bearing != null) {
+            canvas.drawLine(
+                locationX,
+                locationY,
+                locationX,
+                locationY - BEARING_CIRCLE_RADIUS,
+                Paint().apply {
+                    color = Color.BLACK
+                    strokeWidth = BEARING_LINE_WIDTH
+                }
+            )
+        }
 
         // Return the result in the required size.
         Bitmap.createScaledBitmap(
