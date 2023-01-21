@@ -36,4 +36,6 @@
     <string name="error_brouter_track_loading_failed">Failed to load a track from BRouter</string>
     <string name="error_all_permissions_are_required">All the permissions are required</string>
     <string name="randomize_bearing">Randomize bearing</string>
+    <string name="error_failed_to_load_tile">Failed to load a tile</string>
+    <string name="template_error_occurred">An unknown error occurred (%1$s)</string>
 </resources>
