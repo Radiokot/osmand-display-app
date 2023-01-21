@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <queries>
         <package android:name="net.osmand" />
@@ -65,6 +65,12 @@
                     android:scheme="https" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.krishna.debug_tools.activity.ActivityDebugTools"
+            android:exported="false"
+            tools:replace="android:theme"
+            android:theme="@style/Theme.Material3.Light.NoActionBar" />
 
     </application>
 

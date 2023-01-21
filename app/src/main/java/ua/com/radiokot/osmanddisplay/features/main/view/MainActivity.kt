@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts.StartIntentSend
 import androidx.activity.result.registerForActivityResult
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.color.MaterialColors
+import com.krishna.debug_tools.activity.ActivityDebugTools
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
@@ -147,8 +148,8 @@ class MainActivity : BaseActivity() {
             clearTheScreen()
         }
 
-        open_osm_and_button.setOnClickListener {
-            openOsmAnd()
+        open_dev_tools_button.setOnClickListener {
+            openDevTools()
         }
 
         capture_map_frame_button.setOnClickListener {
@@ -220,9 +221,8 @@ class MainActivity : BaseActivity() {
             .addTo(compositeDisposable)
     }
 
-    private fun openOsmAnd() {
-        packageManager.getLaunchIntentForPackage(getKoin().getProperty("osmAndPackage")!!)
-            ?.also(this::startActivity)
+    private fun openDevTools() {
+        startActivity(Intent(this, ActivityDebugTools::class.java))
     }
 
     private var captureDisposable: Disposable? = null
