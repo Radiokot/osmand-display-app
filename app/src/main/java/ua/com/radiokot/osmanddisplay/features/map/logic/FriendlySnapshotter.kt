@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.mapbox.maps.*
 import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import java.io.IOException
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
@@ -116,7 +117,7 @@ class FriendlySnapshotter(
                 }
             }
         }
-    }
+    }.subscribeOn(AndroidSchedulers.mainThread())
 
     private companion object {
         private fun createStyle(
