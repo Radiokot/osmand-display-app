@@ -15,6 +15,9 @@ class ImportedTrackRecord(
     val thumbnailImageFile: File,
     val geoJsonFile: File
 ) : Parcelable {
+    val id: String
+        get() = geoJsonFile.nameWithoutExtension
+
     companion object {
         private const val VERSION = 1
 

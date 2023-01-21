@@ -4,6 +4,7 @@ import android.app.Activity
 import android.companion.CompanionDeviceManager
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Handler
@@ -44,6 +45,7 @@ import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFacto
 import ua.com.radiokot.osmanddisplay.features.track.brouter.logic.GetTrackFromBRouterWebUseCase
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
+import ua.com.radiokot.osmanddisplay.features.track.logic.ImportTrackUseCase
 import java.io.File
 import java.time.Duration
 import java.util.*
@@ -80,6 +82,17 @@ val commonModules: List<Module> = listOf(
             GetTrackFromBRouterWebUseCase(
                 url = url,
                 httpClient = get()
+            )
+        }
+
+        factory { (name: String, geometry: Geometry, thumbnail: Bitmap) ->
+            ImportTrackUseCase(
+                name = name,
+                geometry = geometry,
+                thumbnail = thumbnail,
+                importedTracksRepository = get(),
+                tileStore = get(),
+                tilesetDescriptor = get(),
             )
         }
     },

@@ -7,7 +7,6 @@ import com.mapbox.bindgen.Value
 import com.mapbox.common.TileDataDomain
 import com.mapbox.common.TileStore
 import com.mapbox.common.TileStoreOptions
-import com.mapbox.common.TilesetDescriptor
 import com.mapbox.geojson.Geometry
 import com.mapbox.maps.*
 import org.koin.android.ext.koin.androidContext
@@ -24,6 +23,8 @@ import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
+import kotlin.math.ceil
+import kotlin.math.floor
 
 enum class InjectedSnapshotter {
     TRACK_THUMBNAIL,
@@ -53,7 +54,7 @@ val mapModules: List<Module> = listOf(
         }
 
         single {
-            val mapCameraZoom: Byte = checkNotNull(getNumericProperty("mapCameraZoom"))
+            val mapCameraZoom = checkNotNull(getNumericProperty<Double>("mapCameraZoom"))
 
             get<OfflineManager>()
                 .createTilesetDescriptor(
@@ -64,8 +65,8 @@ val mapModules: List<Module> = listOf(
                                 .glyphsRasterizationMode(GlyphsRasterizationMode.ALL_GLYPHS_RASTERIZED_LOCALLY)
                                 .build()
                         )
-                        .minZoom(mapCameraZoom)
-                        .maxZoom(mapCameraZoom)
+                        .minZoom(floor(mapCameraZoom).toInt().toByte())
+                        .maxZoom(ceil(mapCameraZoom).toInt().toByte())
                         .build()
                 )
         }
