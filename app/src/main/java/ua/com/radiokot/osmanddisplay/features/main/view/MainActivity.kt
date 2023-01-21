@@ -40,6 +40,7 @@ import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
+import ua.com.radiokot.osmanddisplay.features.track.logic.ClearImportedTracksUseCase
 import ua.com.radiokot.osmanddisplay.features.track.view.ImportedTrackSelectionBottomSheet
 
 class MainActivity : BaseActivity() {
@@ -157,8 +158,8 @@ class MainActivity : BaseActivity() {
         }
 
         clear_imported_tracks_button.setOnClickListener {
-            importedTracksRepository
-                .clear()
+            get<ClearImportedTracksUseCase>()
+                .perform()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     selectedTrack.value = SelectedTrack.Nothing
