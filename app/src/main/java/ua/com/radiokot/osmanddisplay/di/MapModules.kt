@@ -3,6 +3,10 @@ package ua.com.radiokot.osmanddisplay.di
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import com.mapbox.bindgen.Value
+import com.mapbox.common.TileDataDomain
+import com.mapbox.common.TileStore
+import com.mapbox.common.TileStoreOptions
 import com.mapbox.geojson.Geometry
 import com.mapbox.maps.*
 import org.koin.android.ext.koin.androidContext
@@ -14,12 +18,68 @@ import org.koin.dsl.module
 import ua.com.radiokot.osmanddisplay.BuildConfig
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.extension.addTrack
+import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
+import kotlin.math.ceil
+import kotlin.math.floor
+
+enum class InjectedSnapshotter {
+    TRACK_THUMBNAIL,
+    MAP_BROADCASTING,
+}
 
 val mapModules: List<Module> = listOf(
+    // Offline
+    module {
+        single {
+            TileStore.create().apply {
+                setOption(
+                    TileStoreOptions.MAPBOX_ACCESS_TOKEN,
+                    TileDataDomain.MAPS,
+                    Value(BuildConfig.MAPBOX_PUBLIC_TOKEN)
+                )
+            }
+        }
+
+        single {
+            OfflineManager(
+                ResourceOptions.Builder()
+                    .tileStore(get())
+                    .accessToken(BuildConfig.MAPBOX_PUBLIC_TOKEN)
+                    .build()
+            )
+        }
+
+        single {
+            val mapCameraZoom = checkNotNull(getNumericProperty<Double>("mapCameraZoom"))
+
+            get<OfflineManager>()
+                .createTilesetDescriptor(
+                    TilesetDescriptorOptions.Builder()
+                        .styleURI(getProperty("mapStyleUri"))
+                        .stylePackOptions(
+                            StylePackLoadOptions.Builder()
+                                .glyphsRasterizationMode(GlyphsRasterizationMode.ALL_GLYPHS_RASTERIZED_LOCALLY)
+                                .build()
+                        )
+                        .minZoom(floor(mapCameraZoom).toInt().toByte())
+                        .maxZoom(ceil(mapCameraZoom).toInt().toByte())
+                        .build()
+                )
+        }
+
+        single<ResourceOptions> {
+            ResourceOptions.Builder()
+                .tileStore(get())
+                .tileStoreUsageMode(TileStoreUsageMode.READ_ONLY)
+                .accessToken(BuildConfig.MAPBOX_PUBLIC_TOKEN)
+                .build()
+        }
+    },
+
     // Snapshotter
     module {
         // Snapshotter for map broadcasting
@@ -27,11 +87,7 @@ val mapModules: List<Module> = listOf(
                                                                    trackGeoJson: String?) ->
             val options = MapSnapshotOptions.Builder()
                 .size(Size(widthPx.toFloat(), heightPx.toFloat()))
-                .resourceOptions(
-                    ResourceOptions.Builder()
-                        .accessToken(BuildConfig.MAPBOX_PUBLIC_TOKEN)
-                        .build()
-                )
+                .resourceOptions(get())
                 .build()
 
             val overlayOptions = SnapshotOverlayOptions(
@@ -64,11 +120,7 @@ val mapModules: List<Module> = listOf(
             val width = 350f
             val options = MapSnapshotOptions.Builder()
                 .size(Size(width, width * 0.75f))
-                .resourceOptions(
-                    ResourceOptions.Builder()
-                        .accessToken(BuildConfig.MAPBOX_PUBLIC_TOKEN)
-                        .build()
-                )
+                .resourceOptions(get())
                 .build()
 
             val overlayOptions = SnapshotOverlayOptions(

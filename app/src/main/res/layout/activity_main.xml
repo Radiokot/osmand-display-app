@@ -180,12 +180,12 @@
             tools:visibility="visible" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/open_osm_and_button"
+            android:id="@+id/open_dev_tools_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="8dp"
-            android:text="@string/open_osm_and"
+            android:text="@string/open_dev_tools"
             app:icon="@drawable/ic_navigation" />
 
         <com.google.android.material.button.MaterialButton

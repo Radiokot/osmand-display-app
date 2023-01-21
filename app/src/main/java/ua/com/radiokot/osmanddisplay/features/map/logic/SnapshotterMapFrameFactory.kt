@@ -4,17 +4,26 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextUtils
 import com.mapbox.maps.CameraOptions
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.toSingle
 import mu.KotlinLogging
+import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
+import java.io.IOException
 import kotlin.math.roundToInt
 
 /**
  * Composes map frames based on [FriendlySnapshotter] map snapshots.
  * Draws location marker and bearing, if it is available.
+ *
+ * If there is something wrong with the snapshot, composes a frame with
+ * the error message.
  */
 class SnapshotterMapFrameFactory(
     private val snapshotter: FriendlySnapshotter,
@@ -24,6 +33,11 @@ class SnapshotterMapFrameFactory(
 ) : MapFrameFactory {
     private val logger = KotlinLogging.logger("SnapshotterMFF@${hashCode()}")
 
+    private data class SnapshotResult(
+        val error: Throwable?,
+        val snapshot: Bitmap?,
+    )
+
     override fun composeFrame(
         location: LocationData,
         cameraZoom: Double,
@@ -32,13 +46,33 @@ class SnapshotterMapFrameFactory(
         return waitForSnapshotterSetup()
             .flatMap {
                 getMapSnapshot(location, cameraZoom)
+                    .map { snapshot ->
+                        SnapshotResult(null, snapshot)
+                    }
             }
-            .flatMap { snapshot ->
-                composeFrame(
-                    snapshot = snapshot,
-                    bearing = location.bearing,
-                    postScale = postScale,
-                )
+            .onErrorReturn { error ->
+                SnapshotResult(error, null)
+            }
+            .flatMap { (error, snapshot) ->
+                if (error == null && snapshot != null) {
+                    composeFrame(
+                        snapshot = snapshot,
+                        bearing = location.bearing,
+                        postScale = postScale,
+                    )
+                } else {
+                    if (error is IOException) {
+                        composeErrorFrame(snapshotter.context.getString(R.string.error_failed_to_load_tile))
+                    } else {
+                        composeErrorFrame(
+                            error?.message
+                                ?: snapshotter.context.getString(
+                                    R.string.template_error_occurred,
+                                    error.toString()
+                                )
+                        )
+                    }
+                }
             }
     }
 
@@ -105,7 +139,7 @@ class SnapshotterMapFrameFactory(
 
         return snapshotter.getSnapshotBitmap()
             .doOnError {
-                logger.warn { "getMapSnapshot(): snapshotter_not_ready" }
+                logger.warn(it) { "getMapSnapshot(): snapshotter_not_ready" }
             }
             .doOnSuccess {
                 logger.debug {
@@ -180,6 +214,38 @@ class SnapshotterMapFrameFactory(
             false
         )
             .also { scaledFrame.recycle() }
+    }.toSingle()
+
+    private fun composeErrorFrame(message: String): Single<Bitmap> = {
+        val bitmap =
+            Bitmap.createBitmap(frameWidthPx, frameHeightPx, Bitmap.Config.ARGB_8888, false)
+        val canvas = Canvas(bitmap)
+
+        val textPaint = TextPaint(Paint()).apply {
+            textSize = 24f
+            color = Color.WHITE
+        }
+
+        val offsetTop = 25f
+        val offsetHorizontal = 25f
+
+        val textLayout =
+            StaticLayout.Builder.obtain(
+                message,
+                0,
+                message.length,
+                textPaint,
+                frameWidthPx - 2 * offsetHorizontal.toInt()
+            )
+                .setMaxLines(3)
+                .setEllipsize(TextUtils.TruncateAt.END)
+                .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                .build()
+
+        canvas.translate(offsetHorizontal, offsetTop)
+        textLayout.draw(canvas)
+
+        bitmap
     }.toSingle()
 
     override fun destroy() {

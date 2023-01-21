@@ -6,6 +6,8 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
 import androidx.core.widget.addTextChangedListener
+import com.google.android.material.progressindicator.CircularProgressIndicatorSpec
+import com.google.android.material.progressindicator.IndeterminateDrawable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
@@ -13,7 +15,6 @@ import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_import_track.*
 import mu.KotlinLogging
 import org.koin.android.ext.android.get
-import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
 import ua.com.radiokot.osmanddisplay.R
@@ -23,13 +24,11 @@ import ua.com.radiokot.osmanddisplay.di.InjectedSnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.track.data.model.GeoJsonTrackData
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
-import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
+import ua.com.radiokot.osmanddisplay.features.track.logic.ImportTrackUseCase
 import java.io.InputStreamReader
 
 class ImportTrackActivity : BaseActivity() {
     private val logger = KotlinLogging.logger("ImportTrackActivity@${hashCode()}")
-
-    private val importedTracksRepository: ImportedTracksRepository by inject()
 
     private val file: LocalFile? by lazy {
         intent.getParcelableExtra(FILE_EXTRA)
@@ -52,10 +51,26 @@ class ImportTrackActivity : BaseActivity() {
             validate()
         }
 
+    private var isImporting: Boolean = false
+        set(value) {
+            field = value
+            validate()
+
+            runOnUiThread {
+                if (value) {
+                    showImportProgress()
+                } else {
+                    hideImportProgress()
+                }
+            }
+        }
+
     private var canImport: Boolean = false
         set(value) {
             field = value
-            import_track_button.isEnabled = value
+            runOnUiThread {
+                import_track_button.isEnabled = value
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -151,6 +166,7 @@ class ImportTrackActivity : BaseActivity() {
     private fun validate() {
         canImport = !trackName.isNullOrBlank()
                 && trackThumbnail != null
+                && !isImporting
     }
 
     private fun importTrack() {
@@ -158,14 +174,22 @@ class ImportTrackActivity : BaseActivity() {
             return
         }
 
-        importedTracksRepository
-            .importTrack(
-                name = trackName!!,
-                geometry = geoJsonTrackData.geometry,
-                thumbnail = trackThumbnail!!
+        get<ImportTrackUseCase> {
+            parametersOf(
+                trackName!!,
+                geoJsonTrackData.geometry,
+                trackThumbnail!!,
             )
+        }
+            .perform()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe {
+                isImporting = true
+            }
+            .doOnEvent { _, _ ->
+                isImporting = false
+            }
             .subscribeBy(
                 onSuccess = this::setResultAndFinish,
                 onError = {
@@ -177,10 +201,22 @@ class ImportTrackActivity : BaseActivity() {
             .addTo(compositeDisposable)
     }
 
+    private fun showImportProgress() {
+        val progressDrawable =
+            IndeterminateDrawable.createCircularDrawable(
+                this,
+                CircularProgressIndicatorSpec(this, null)
+            )
+        import_track_button.icon = progressDrawable
+    }
+
+    private fun hideImportProgress() {
+        import_track_button.icon = null
+    }
+
     private fun setResultAndFinish(track: ImportedTrackRecord) {
         setResult(Activity.RESULT_OK, Intent().putExtra(RESULT_EXTRA, track))
         finish()
-
     }
 
     companion object {

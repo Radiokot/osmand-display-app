@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import com.mapbox.maps.*
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
+import java.io.IOException
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
 
@@ -12,7 +13,7 @@ import kotlin.reflect.jvm.isAccessible
  * [Snapshotter] that is more friendly to use.
  */
 class FriendlySnapshotter(
-    context: Context,
+    val context: Context,
     options: MapSnapshotOptions,
     overlayOptions: SnapshotOverlayOptions
 ) : Snapshotter(context, options, overlayOptions) {
@@ -92,18 +93,28 @@ class FriendlySnapshotter(
     }
 
     /**
-     * @return Single emitting the snapshot bitmap.
-     * Subscribed on the main thread.
+     * @return Single emitting the snapshot bitmap or an error with a meaningful message.
+     * - Subscribed on the main thread
+     * - Ignores attribution
      */
+    @Suppress("INACCESSIBLE_TYPE")
     fun getSnapshotBitmap(): Single<Bitmap> = Single.create { emitter ->
-        start { snapshot ->
-            val bitmap = snapshot?.bitmap()
-            if (bitmap == null) {
-//                logger.warn { "getMapSnapshot(): snapshotter_not_ready" }
-                emitter.tryOnError(IllegalStateException("Snapshotter is not ready"))
+        if (getStyleJson().isEmpty() && getStyleUri().isEmpty()) {
+            emitter.tryOnError(IllegalStateException("It's required to call setUri or setJson to provide a style definition before calling start."))
+        }
+
+        coreSnapshotter.start { result ->
+            val error = result.error
+
+            if (error != null) {
+                emitter.tryOnError(getExceptionFromMessage(error))
             } else {
-//                logger.debug { "getMapSnapshot(): got_snapshot" }
-                emitter.onSuccess(bitmap)
+                val value = result.value as? MapSnapshotInterface
+                if (value != null) {
+                    emitter.onSuccess(value.bitmap())
+                } else {
+                    emitter.tryOnError(IllegalStateException("There is no error, yet no value either"))
+                }
             }
         }
     }.subscribeOn(AndroidSchedulers.mainThread())
@@ -116,6 +127,15 @@ class FriendlySnapshotter(
             val pixelRatio = context.resources.displayMetrics.density
 
             return Style::class.constructors.first().call(styleManager, pixelRatio)
+        }
+
+        private fun getExceptionFromMessage(message: String): Exception {
+            return when {
+                message.startsWith("Failed to load tile") ->
+                    IOException(message)
+                else ->
+                    RuntimeException(message)
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ import org.slf4j.impl.HandroidLoggerAdapter
 import ua.com.radiokot.osmanddisplay.di.commonModules
 import ua.com.radiokot.osmanddisplay.di.dataModules
 import ua.com.radiokot.osmanddisplay.di.mapModules
+import ua.com.radiokot.osmanddisplay.di.useCaseModules
 import java.io.IOException
 
 class App : Application() {
@@ -29,6 +30,7 @@ class App : Application() {
                 commonModules
                         + mapModules
                         + dataModules
+                        + useCaseModules
             )
             androidFileProperties("app.properties")
         }

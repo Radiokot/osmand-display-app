@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts.StartIntentSend
 import androidx.activity.result.registerForActivityResult
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.color.MaterialColors
+import com.krishna.debug_tools.activity.ActivityDebugTools
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
@@ -39,6 +40,7 @@ import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
+import ua.com.radiokot.osmanddisplay.features.track.logic.ClearImportedTracksUseCase
 import ua.com.radiokot.osmanddisplay.features.track.view.ImportedTrackSelectionBottomSheet
 
 class MainActivity : BaseActivity() {
@@ -147,8 +149,8 @@ class MainActivity : BaseActivity() {
             clearTheScreen()
         }
 
-        open_osm_and_button.setOnClickListener {
-            openOsmAnd()
+        open_dev_tools_button.setOnClickListener {
+            openDevTools()
         }
 
         capture_map_frame_button.setOnClickListener {
@@ -156,8 +158,8 @@ class MainActivity : BaseActivity() {
         }
 
         clear_imported_tracks_button.setOnClickListener {
-            importedTracksRepository
-                .clear()
+            get<ClearImportedTracksUseCase>()
+                .perform()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     selectedTrack.value = SelectedTrack.Nothing
@@ -220,9 +222,8 @@ class MainActivity : BaseActivity() {
             .addTo(compositeDisposable)
     }
 
-    private fun openOsmAnd() {
-        packageManager.getLaunchIntentForPackage(getKoin().getProperty("osmAndPackage")!!)
-            ?.also(this::startActivity)
+    private fun openDevTools() {
+        startActivity(Intent(this, ActivityDebugTools::class.java))
     }
 
     private var captureDisposable: Disposable? = null
