@@ -104,7 +104,6 @@ class MapBroadcastingService : Service(), KoinComponent {
         subscribeToLocations()
 
         requestLocationUpdates()
-        publishCurrentLocation()
 
         return START_REDELIVER_INTENT
     }
@@ -120,19 +119,6 @@ class MapBroadcastingService : Service(), KoinComponent {
         } catch (e: Exception) {
             logger.debug(e) {
                 "subscribeToLocationUpdates(): error_occurred"
-            }
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun publishCurrentLocation() {
-        try {
-            locationClient.lastLocation.addOnSuccessListener { lastLocation: Location? ->
-                lastLocation?.also(this::onNewLocationFromClient)
-            }
-        } catch (e: Exception) {
-            logger.debug(e) {
-                "publishCurrentLocation(): error_occurred"
             }
         }
     }
