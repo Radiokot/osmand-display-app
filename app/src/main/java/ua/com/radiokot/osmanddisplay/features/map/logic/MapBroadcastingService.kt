@@ -25,7 +25,6 @@ import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
 import mu.KotlinLogging
 import org.koin.android.ext.android.get
-import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.core.component.KoinComponent
 import org.koin.core.parameter.parametersOf
@@ -94,7 +93,8 @@ class MapBroadcastingService : Service(), KoinComponent {
 
         logger.debug {
             "onStartCommand(): starting:" +
-                    "\ndevice_address=$deviceAddress"
+                    "\ndevice_address=$deviceAddress," +
+                    "\nflags=$flags"
         }
 
         commandSender = get { parametersOf(deviceAddress) }
@@ -105,7 +105,7 @@ class MapBroadcastingService : Service(), KoinComponent {
         requestLocationUpdates()
         publishCurrentLocation()
 
-        return START_NOT_STICKY
+        return START_REDELIVER_INTENT
     }
 
     @SuppressLint("MissingPermission")
