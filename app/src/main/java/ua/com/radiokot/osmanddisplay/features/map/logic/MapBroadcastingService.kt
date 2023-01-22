@@ -59,10 +59,11 @@ class MapBroadcastingService : Service(), KoinComponent {
     private val locationClient: FusedLocationProviderClient by inject()
 
     private val locationRequest = LocationRequest.Builder(8000)
-        .setMinUpdateIntervalMillis(8000)
-        .setMaxUpdateDelayMillis(20000)
+        .setMinUpdateIntervalMillis(7000)
+        .setMaxUpdateDelayMillis(15000)
         .setMinUpdateDistanceMeters(2f)
-        .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+        .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+        .setGranularity(Granularity.GRANULARITY_FINE)
         .build()
 
     private val locationCallback = object : LocationCallback() {
