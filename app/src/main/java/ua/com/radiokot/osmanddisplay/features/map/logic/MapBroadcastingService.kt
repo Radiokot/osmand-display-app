@@ -80,6 +80,8 @@ class MapBroadcastingService : Service(), KoinComponent {
     override fun onCreate() {
         super.onCreate()
         compositeDisposable = CompositeDisposable()
+
+        logger.debug { "onCreate(): created" }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -95,6 +97,7 @@ class MapBroadcastingService : Service(), KoinComponent {
         logger.debug {
             "onStartCommand(): starting:" +
                     "\ndevice_address=$deviceAddress," +
+                    "\ntrack=$track" +
                     "\nflags=$flags"
         }
 
@@ -250,7 +253,7 @@ class MapBroadcastingService : Service(), KoinComponent {
     }
 
     override fun onDestroy() {
-        logger.debug { "destroying" }
+        logger.debug { "onDestroy(): destroying" }
 
         compositeDisposable.dispose()
         mapFrameFactory.destroy()
