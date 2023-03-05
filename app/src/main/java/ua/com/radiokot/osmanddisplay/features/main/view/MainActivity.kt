@@ -22,13 +22,13 @@ import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
-import mu.KotlinLogging
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
+import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DirectionsBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
@@ -108,7 +108,7 @@ class MainActivity : BaseActivity() {
 
     private val importedTracksRepository: ImportedTracksRepository by inject()
 
-    private val logger = KotlinLogging.logger("MainActivity@${hashCode()}")
+    private val logger = kLogger("MainActivity")
 
     private val mapCameraZoom: Double =
         requireNotNull(getKoin().getNumericProperty("mapCameraZoom"))

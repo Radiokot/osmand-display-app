@@ -6,16 +6,16 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import mu.KotlinLogging
 import org.koin.android.ext.android.get
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
+import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.track.brouter.logic.GetTrackFromBRouterWebUseCase
 import ua.com.radiokot.osmanddisplay.features.track.view.ImportTrackActivity
 
 class BRouterUrlActivity : BaseActivity() {
-    private val logger = KotlinLogging.logger("BRouterUrlActivity@${hashCode()}")
+    private val logger = kLogger("BRouterUrlActivity")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

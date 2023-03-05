@@ -15,7 +15,6 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
 import kotlinx.android.synthetic.main.bottom_sheet_imported_track_selection.*
-import mu.KotlinLogging
 import org.koin.android.ext.android.inject
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.util.localfile.OpenLocalFileContract
@@ -26,8 +25,6 @@ import java.text.DateFormat
 
 class ImportedTrackSelectionBottomSheet :
     BottomSheetDialogFragment(R.layout.bottom_sheet_imported_track_selection) {
-
-    private val logger = KotlinLogging.logger("TracksBottomSheet@${hashCode()}")
 
     private val importedTracksRepository: ImportedTracksRepository by inject()
 

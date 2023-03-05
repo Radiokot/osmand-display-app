@@ -12,8 +12,8 @@ import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.SingleSubject
 import io.reactivex.subjects.Subject
-import mu.KotlinLogging
 import ua.com.radiokot.osmanddisplay.base.extension.encodeAsHexString
+import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -34,7 +34,7 @@ class BleDisplayCommandSender(
     private val keepAlive: Boolean,
     private val context: Context,
 ) : DisplayCommandSender {
-    private val logger = KotlinLogging.logger("BLECommandSender@${hashCode()}")
+    private val logger = kLogger("BLECommandSender")
 
     private val isBusySubject: Subject<Boolean> = PublishSubject.create()
     override val isBusy: Observable<Boolean> = isBusySubject

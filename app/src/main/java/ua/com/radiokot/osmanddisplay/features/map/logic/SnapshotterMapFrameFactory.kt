@@ -12,8 +12,8 @@ import com.mapbox.maps.CameraOptions
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.toSingle
-import mu.KotlinLogging
 import ua.com.radiokot.osmanddisplay.R
+import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 import java.io.IOException
 import kotlin.math.roundToInt
@@ -31,7 +31,7 @@ class SnapshotterMapFrameFactory(
     private val frameWidthPx: Int,
     private val frameHeightPx: Int,
 ) : MapFrameFactory {
-    private val logger = KotlinLogging.logger("SnapshotterMFF@${hashCode()}")
+    private val logger = kLogger("SnapshotterMFF")
 
     private data class SnapshotResult(
         val error: Throwable?,

@@ -16,11 +16,11 @@ import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
-import mu.KotlinLogging
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
+import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.NavigationDirection
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
@@ -38,7 +38,7 @@ class DirectionsBroadcastingService : Service(), OsmAndServiceConnectionListener
         object OsmAndNotFound : Status()
     }
 
-    private val logger = KotlinLogging.logger("BcService@${hashCode()}")
+    private val logger = kLogger("BcService")
 
     private var status: Status = Status.Created
         set(value) {

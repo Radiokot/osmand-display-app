@@ -8,9 +8,9 @@ import io.reactivex.Single
 import io.reactivex.rxkotlin.toCompletable
 import io.reactivex.rxkotlin.toSingle
 import io.reactivex.schedulers.Schedulers
-import mu.KotlinLogging
 import ua.com.radiokot.osmanddisplay.base.data.storage.MultipleItemsRepository
 import ua.com.radiokot.osmanddisplay.base.data.storage.RepositoryCache
+import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import java.io.File
 import java.util.*
@@ -19,7 +19,7 @@ class ImportedTracksRepository(
     private val directory: File,
     itemsCache: RepositoryCache<ImportedTrackRecord>,
 ) : MultipleItemsRepository<ImportedTrackRecord>(itemsCache) {
-    private val logger = KotlinLogging.logger("ImportedTracksRepo@${hashCode()}")
+    private val logger = kLogger("ImportedTracksRepo")
 
     override fun getItems(): Single<List<ImportedTrackRecord>> = {
         directory

@@ -1,11 +1,14 @@
 package ua.com.radiokot.osmanddisplay.features.track.logic
 
 import android.graphics.Bitmap
-import com.mapbox.common.*
+import com.mapbox.common.NetworkRestriction
+import com.mapbox.common.TileRegionLoadOptions
+import com.mapbox.common.TileStore
+import com.mapbox.common.TilesetDescriptor
 import com.mapbox.geojson.Geometry
 import io.reactivex.Single
 import io.reactivex.disposables.Disposable
-import mu.KotlinLogging
+import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
 
@@ -21,7 +24,7 @@ class ImportTrackUseCase(
     private val tileStore: TileStore,
     private val tilesetDescriptor: TilesetDescriptor,
 ) {
-    private val logger = KotlinLogging.logger("ImportTrackUC@${hashCode()}")
+    private val logger = kLogger("ImportTrackUC")
 
     private lateinit var importedTrack: ImportedTrackRecord
 

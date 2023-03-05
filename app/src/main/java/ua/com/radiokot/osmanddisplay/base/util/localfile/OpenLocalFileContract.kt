@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.result.contract.ActivityResultContract
-import mu.KotlinLogging
+import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 
 /**
  * A contract that calls [Intent.ACTION_OPEN_DOCUMENT] in order to get a [LocalFile].
@@ -32,7 +32,7 @@ class OpenLocalFileContract(
         class Opened(val file: LocalFile) : Result()
     }
 
-    private val logger = KotlinLogging.logger("OpenLocalFileCt@${hashCode()}")
+    private val logger = kLogger("OpenLocalFileCt")
 
     override fun createIntent(context: Context, input: Collection<String>?): Intent {
         return Intent(Intent.ACTION_OPEN_DOCUMENT)

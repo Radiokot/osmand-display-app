@@ -23,13 +23,13 @@ import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
-import mu.KotlinLogging
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
 import org.koin.core.component.KoinComponent
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
+import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.NotificationChannelHelper
 import ua.com.radiokot.osmanddisplay.features.main.view.MainActivity
@@ -39,7 +39,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 
 class MapBroadcastingService : Service(), KoinComponent {
-    private val logger = KotlinLogging.logger("MapBcService@${hashCode()}")
+    private val logger = kLogger("MapBcService")
 
     private val mapCameraZoom: Double =
         requireNotNull(getKoin().getNumericProperty("mapCameraZoom"))
