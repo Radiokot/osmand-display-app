@@ -32,7 +32,6 @@ import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
 import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
-import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DirectionsBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
 import ua.com.radiokot.osmanddisplay.features.main.data.model.SelectedBleDevice
@@ -84,15 +83,6 @@ class MainActivity : BaseActivity() {
     private val deviceSelectionLauncher =
         registerForActivityResult(StartIntentSenderForResult(), this::onDeviceSelectionResult)
 
-    private val directionsBroadcastingPermissionsLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions(),
-            arrayOf(
-                "android.permission.BLUETOOTH_CONNECT",
-                "android.permission.POST_NOTIFICATIONS"
-            ),
-            this::onDirectionsPermissionsGranted
-        )
     private val mapBroadcastingPermissionsLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions(),
@@ -126,14 +116,6 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initButtons() {
-        start_directions_broadcasting_button.setOnClickListener {
-            directionsBroadcastingPermissionsLauncher.launch(Unit)
-        }
-
-        stop_directions_broadcasting_button.setOnClickListener {
-            stopDirectionsBroadcastingService()
-        }
-
         start_map_broadcasting_button.setOnClickListener {
             mapBroadcastingPermissionsLauncher.launch(Unit)
         }
@@ -173,13 +155,11 @@ class MainActivity : BaseActivity() {
             .observe(this) { selectedDevice ->
                 when (selectedDevice) {
                     SelectedDevice.Nothing -> {
-                        start_directions_broadcasting_button.isEnabled = false
                         start_map_broadcasting_button.isEnabled = false
                         send_random_direction_button.isEnabled = false
                         clear_screen_button.isEnabled = false
                     }
                     is SelectedDevice.Selected -> {
-                        start_directions_broadcasting_button.isEnabled = true
                         start_map_broadcasting_button.isEnabled = true
                         send_random_direction_button.isEnabled = true
                         clear_screen_button.isEnabled = true
@@ -382,27 +362,6 @@ class MainActivity : BaseActivity() {
     private fun selectTrack() {
         ImportedTrackSelectionBottomSheet()
             .show(supportFragmentManager, ImportedTrackSelectionBottomSheet.TAG)
-    }
-
-    private fun onDirectionsPermissionsGranted(result: Map<String, Boolean>) {
-        if (result.values.all { it }) {
-            startDirectionsBroadcastingService()
-        } else {
-            toastManager.short(R.string.error_all_permissions_are_required)
-        }
-    }
-
-    private fun startDirectionsBroadcastingService() {
-        val intent = Intent(this, DirectionsBroadcastingService::class.java)
-            .apply {
-                putExtras(DirectionsBroadcastingService.getBundle(selectedDeviceAddress!!))
-            }
-        startForegroundService(intent)
-    }
-
-    private fun stopDirectionsBroadcastingService() {
-        val intent = Intent(this, DirectionsBroadcastingService::class.java)
-        stopService(intent)
     }
 
     private fun onMapBroadcastingPermissionsGranted(result: Map<String, Boolean>) {
