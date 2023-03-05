@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.*
 import android.location.Location
+import android.os.Binder
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Looper
@@ -39,6 +40,11 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 
 class MapBroadcastingService : Service(), KoinComponent {
+    inner class Binder : android.os.Binder() {
+        val deviceAddress: String?
+            get() = this@MapBroadcastingService.deviceAddress
+    }
+
     private val logger = kLogger("MapBcService")
 
     private val mapCameraZoom: Double =
@@ -50,8 +56,10 @@ class MapBroadcastingService : Service(), KoinComponent {
         getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
+    private var deviceAddress: String? = null
     private lateinit var commandSender: DisplayCommandSender
     private lateinit var compositeDisposable: CompositeDisposable
+    private lateinit var binder: Binder
 
     // Needs to be injected in the main thread.
     private lateinit var mapFrameFactory: MapFrameFactory
@@ -75,11 +83,12 @@ class MapBroadcastingService : Service(), KoinComponent {
 
     private val locationsSubject: Subject<LocationData> = PublishSubject.create()
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onCreate() {
         super.onCreate()
         compositeDisposable = CompositeDisposable()
+        binder = Binder()
 
         logger.debug { "onCreate(): created" }
     }
@@ -101,6 +110,7 @@ class MapBroadcastingService : Service(), KoinComponent {
                     "\nflags=$flags"
         }
 
+        this.deviceAddress = deviceAddress
         commandSender = get { parametersOf(deviceAddress) }
         mapFrameFactory = get { parametersOf(track) }
 

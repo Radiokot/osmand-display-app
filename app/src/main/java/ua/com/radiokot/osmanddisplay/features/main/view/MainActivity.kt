@@ -3,10 +3,13 @@ package ua.com.radiokot.osmanddisplay.features.main.view
 import android.app.Activity
 import android.bluetooth.le.ScanResult
 import android.companion.CompanionDeviceManager
+import android.content.ComponentName
 import android.content.Intent
+import android.content.ServiceConnection
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.os.IBinder
 import android.view.View
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -24,7 +27,6 @@ import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.getKoin
-import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
@@ -39,7 +41,6 @@ import ua.com.radiokot.osmanddisplay.features.map.logic.MapBroadcastingService
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
-import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
 import ua.com.radiokot.osmanddisplay.features.track.logic.ClearImportedTracksUseCase
 import ua.com.radiokot.osmanddisplay.features.track.view.ImportedTrackSelectionBottomSheet
 
@@ -106,9 +107,7 @@ class MainActivity : BaseActivity() {
     private val commandSender: DisplayCommandSender
         get() = get { parametersOf(selectedDeviceAddress!!) }
 
-    private val importedTracksRepository: ImportedTracksRepository by inject()
-
-    private val logger = kLogger("MainActivity")
+    private val logger = kLogger("MMainActivity")
 
     private val mapCameraZoom: Double =
         requireNotNull(getKoin().getNumericProperty("mapCameraZoom"))
@@ -122,6 +121,8 @@ class MainActivity : BaseActivity() {
         initDeviceSelection()
         initTrackSelection()
         initButtons()
+
+        bindMapBroadcastingService()
     }
 
     private fun initButtons() {
@@ -342,8 +343,8 @@ class MainActivity : BaseActivity() {
             .data
             ?.takeIf { result.resultCode == Activity.RESULT_OK }
             ?.also { data ->
-                val scanResult =
-                    data.getParcelableExtra<ScanResult>(CompanionDeviceManager.EXTRA_DEVICE)
+                val scanResult: ScanResult? =
+                    data.getParcelableExtra(CompanionDeviceManager.EXTRA_DEVICE)
                 if (scanResult != null) {
                     val selectedBleDevice = SelectedBleDevice(scanResult)
                     selectedDevice.value = SelectedDevice.Selected(selectedBleDevice)
@@ -412,6 +413,34 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    private val mapBroadcastingServiceConnection: ServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, service: IBinder?) {
+            service as MapBroadcastingService.Binder
+            val serviceDeviceAddress = service.deviceAddress
+
+            logger.debug {
+                "subscribeToMapBroadcastingService(): map_bc_service_connected:" +
+                        "\nservice=$service," +
+                        "\nserviceDeviceAddress=$serviceDeviceAddress"
+            }
+
+            if (serviceDeviceAddress != null) {
+                selectedDevice.postValue(
+                    SelectedDevice.Selected(
+                        name = getString(R.string.current_device),
+                        address = serviceDeviceAddress,
+                    )
+                )
+            }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName) {
+            logger.debug {
+                "subscribeToMapBroadcastingService(): map_bc_service_disconnected"
+            }
+        }
+    }
+
     private fun startMapBroadcastingService() {
         val intent = Intent(this, MapBroadcastingService::class.java)
             .putExtras(
@@ -425,6 +454,19 @@ class MainActivity : BaseActivity() {
 
     private fun stopMapBroadcastingService() {
         val intent = Intent(this, MapBroadcastingService::class.java)
+        try {
+            unbindService(mapBroadcastingServiceConnection)
+        } catch (_: Exception) {
+            // I don't care whether it was bound or not.
+        }
         stopService(intent)
+    }
+
+    private fun bindMapBroadcastingService() {
+        bindService(
+            Intent(this, MapBroadcastingService::class.java),
+            mapBroadcastingServiceConnection,
+            BIND_AUTO_CREATE
+        )
     }
 }
