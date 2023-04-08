@@ -1,6 +1,11 @@
-# <img src="https://github.com/Radiokot/osmand-display-app/raw/main/app/src/main/res/mipmap-hdpi/ic_launcher.png" alt="Icon" style="vertical-align: bottom; height: 1.2em;"/> OsmAnd Display app
-An Android application for the [wireless OsmAnd navigation display](https://github.com/Radiokot/osmand-display).
-The communication is done over the BLE serial.
+# <img src="https://github.com/Radiokot/osmand-display-app/raw/main/app/src/main/res/mipmap-hdpi/ic_launcher.png" alt="Icon" style="vertical-align: bottom; height: 1.2em;"/> Bike navigation display app
+A companion Android application for the [wireless bike navigation display](https://github.com/Radiokot/osmand-display).
+
+The app does:
+- Composing of map frames and sending them to the display
+- Importing and storing GeoJSON tracks
+- Downloading map areas for imported tracks to work offline
+- Broadcasting step-by-step navigation directions from OsmAnd, which was the original purpose of the display, but turned out to be useless
 
 <p float="left">
   <img src="https://user-images.githubusercontent.com/5675681/210539138-c739653d-2bbe-474f-b061-48d86704e82c.png" width="400" alt="Prototyping"/>
