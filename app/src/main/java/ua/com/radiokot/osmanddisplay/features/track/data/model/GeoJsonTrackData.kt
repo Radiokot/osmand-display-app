@@ -3,17 +3,24 @@ package ua.com.radiokot.osmanddisplay.features.track.data.model
 import android.os.Parcelable
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.mapbox.geojson.Feature
-import com.mapbox.geojson.FeatureCollection
-import com.mapbox.geojson.Geometry
+import com.mapbox.geojson.*
 import kotlinx.android.parcel.Parcelize
 
 @Parcelize
 class GeoJsonTrackData(
     val name: String?,
-    val geoJsonFeature: Feature,
-    val geometry: Geometry,
+    val trackFeature: Feature,
+    val poi: MultiPoint,
 ) : Parcelable {
+    init {
+        requireNotNull(trackFeature.geometry()) {
+            "The GeoJSON feature must have a geometry"
+        }
+    }
+
+    val trackGeometry: Geometry
+        get() = trackFeature.geometry()!!
+
     companion object {
         /**
          * @return [GeoJsonTrackData] if the [content] is a track GeoJSON,
@@ -22,34 +29,52 @@ class GeoJsonTrackData(
         fun fromFileContent(content: String): GeoJsonTrackData {
             val jsonContent = Gson().fromJson(content, JsonObject::class.java)
 
-            val geoJsonFeature = when (jsonContent.get("type").asString) {
-                "Feature" ->
-                    Feature.fromJson(content)
-                "FeatureCollection" ->
+            val geoJsonType = jsonContent.get("type")?.asString
+
+            checkNotNull(geoJsonType) {
+                "GeoJSON content must have a type"
+            }
+
+            val featureCollection: FeatureCollection? =
+                if (geoJsonType == "FeatureCollection")
                     FeatureCollection.fromJson(content)
+                else
+                    null
+
+            val trackFeature: Feature? = when {
+                featureCollection != null ->
+                    featureCollection
                         .features()
-                        ?.firstOrNull()
+                        ?.find { it.geometry() is LineString }
+                geoJsonType == "Feature" ->
+                    Feature.fromJson(content)
                 else ->
                     null
             }
 
-            checkNotNull(geoJsonFeature) {
-                "The file content can't be read as GeoJSON"
+            val poi: MultiPoint =
+                featureCollection
+                    ?.features()
+                    ?.map(Feature::geometry)
+                    ?.filterIsInstance(Point::class.java)
+                    .let { MultiPoint.fromLngLats(it ?: emptyList()) }
+
+            checkNotNull(trackFeature) {
+                "GeoJSON content must have at leas one LineString (track) feature"
             }
 
-            val geometry = geoJsonFeature.geometry()
-            checkNotNull(geometry) {
-                "The Feature must have a geometry"
+            checkNotNull(trackFeature.geometry()) {
+                "The track feature must have a geometry"
             }
 
-            val name = geoJsonFeature
+            val name = trackFeature
                 .getStringProperty("name")
                 ?.takeIf(String::isNotEmpty)
 
             return GeoJsonTrackData(
                 name = name,
-                geoJsonFeature = geoJsonFeature,
-                geometry = geometry,
+                trackFeature = trackFeature,
+                poi = poi,
             )
         }
     }
