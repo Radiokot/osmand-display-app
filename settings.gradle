@@ -42,5 +42,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "OsmAnd Display"
+rootProject.name = "Bike navigation display"
 include ':app'
