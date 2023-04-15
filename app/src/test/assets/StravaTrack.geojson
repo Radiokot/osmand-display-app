@@ -1,0 +1,32 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "На тот берег",
+                "type": "Велосипед",
+                "links": [
+                    {
+                        "href": "https://www.strava.com/routes/3044739247970226322"
+                    }
+                ]
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        35.072030000000005,
+                        48.45664000000001,
+                        102.83
+                    ],
+                    [
+                        35.07115,
+                        48.4566,
+                        106.59
+                    ]
+                ]
+            }
+        }
+    ]
+}

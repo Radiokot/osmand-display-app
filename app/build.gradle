@@ -48,6 +48,9 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    sourceSets {
+        test.resources.srcDirs += 'src/test/assets'
+    }
 }
 
 dependencies {
