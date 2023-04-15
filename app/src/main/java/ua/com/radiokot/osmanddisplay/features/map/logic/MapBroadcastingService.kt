@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.*
 import android.location.Location
-import android.os.Binder
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Looper
@@ -93,6 +92,7 @@ class MapBroadcastingService : Service(), KoinComponent {
         logger.debug { "onCreate(): created" }
     }
 
+    @Suppress("DEPRECATION")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
@@ -266,7 +266,9 @@ class MapBroadcastingService : Service(), KoinComponent {
         logger.debug { "onDestroy(): destroying" }
 
         compositeDisposable.dispose()
-        mapFrameFactory.destroy()
+        if (this::mapFrameFactory.isInitialized) {
+            mapFrameFactory.destroy()
+        }
         locationClient.removeLocationUpdates(locationCallback)
 
         super.onDestroy()
