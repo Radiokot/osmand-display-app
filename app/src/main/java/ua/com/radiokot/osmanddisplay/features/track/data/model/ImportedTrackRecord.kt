@@ -1,9 +1,7 @@
 package ua.com.radiokot.osmanddisplay.features.track.data.model
 
 import android.os.Parcelable
-import com.mapbox.geojson.Feature
-import com.mapbox.geojson.GeoJson
-import com.mapbox.geojson.Geometry
+import com.mapbox.geojson.*
 import kotlinx.android.parcel.Parcelize
 import java.io.File
 import java.util.*
@@ -18,6 +16,18 @@ class ImportedTrackRecord(
     val id: String
         get() = geoJsonFile.nameWithoutExtension
 
+    fun readTrackGeoJson(): String =
+        geoJsonFile.readText(Charsets.UTF_8)
+            .let(FeatureCollection::fromJson)
+            .features()!!
+            .first()
+            .toJson()
+
+    fun readPoiGeoJson(): String =
+        geoJsonFile.readText(Charsets.UTF_8)
+            .let(FeatureCollection::fromJson)
+            .features()!![1]
+            .toJson()
 
     override fun toString(): String {
         return "ImportedTrackRecord(name='$name', id='$id')"
@@ -39,21 +49,26 @@ class ImportedTrackRecord(
     }
 
     companion object {
-        private const val VERSION = 1
+        private const val VERSION = 2
 
         fun fromGeoJsonFile(file: File): ImportedTrackRecord {
-            val geoJson = Feature.fromJson(file.readText())
+            val features = FeatureCollection.fromJson(file.readText()).features()
+            requireNotNull(features) {
+                "Track must be a non-empty FeatureCollection"
+            }
 
-            val version = geoJson.getNumberProperty("version").toInt()
+            val trackFeature = features.first()
+
+            val version = trackFeature.getNumberProperty("version").toInt()
             require(version == VERSION) {
                 "Unknown version $version"
             }
 
-            val thumbnailImageFileName = geoJson.getStringProperty("thumbnail")
+            val thumbnailImageFileName = trackFeature.getStringProperty("thumbnail")
 
             return ImportedTrackRecord(
-                name = geoJson.getStringProperty("name"),
-                importedAt = Date(geoJson.getNumberProperty("imported_at").toLong()),
+                name = trackFeature.getStringProperty("name"),
+                importedAt = Date(trackFeature.getNumberProperty("imported_at").toLong()),
                 thumbnailImageFile = File(file.parentFile, thumbnailImageFileName),
                 geoJsonFile = file
             )
@@ -62,13 +77,22 @@ class ImportedTrackRecord(
         fun createGeoJson(
             name: String,
             importedAt: Date,
-            geometry: Geometry,
+            geometry: LineString,
+            poi: MultiPoint,
             thumbnailImageFileName: String,
-        ): GeoJson = Feature.fromGeometry(geometry).apply {
-            addNumberProperty("version", 1)
-            addStringProperty("name", name)
-            addNumberProperty("imported_at", importedAt.time)
-            addStringProperty("thumbnail", thumbnailImageFileName)
-        }
+        ): GeoJson = FeatureCollection.fromFeatures(
+            arrayOf(
+                Feature.fromGeometry(geometry).apply {
+                    addNumberProperty("version", 2)
+                    addStringProperty("name", name)
+                    addStringProperty("type", "track")
+                    addNumberProperty("imported_at", importedAt.time)
+                    addStringProperty("thumbnail", thumbnailImageFileName)
+                },
+                Feature.fromGeometry(poi).apply {
+                    addStringProperty("type", "extra-poi")
+                },
+            )
+        )
     }
 }

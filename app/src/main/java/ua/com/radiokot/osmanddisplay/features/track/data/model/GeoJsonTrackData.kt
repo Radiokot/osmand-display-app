@@ -9,17 +9,9 @@ import kotlinx.android.parcel.Parcelize
 @Parcelize
 class GeoJsonTrackData(
     val name: String?,
-    val trackFeature: Feature,
+    val track: LineString,
     val poi: MultiPoint,
 ) : Parcelable {
-    init {
-        requireNotNull(trackFeature.geometry()) {
-            "The GeoJSON feature must have a geometry"
-        }
-    }
-
-    val trackGeometry: Geometry
-        get() = trackFeature.geometry()!!
 
     companion object {
         /**
@@ -52,6 +44,12 @@ class GeoJsonTrackData(
                     null
             }
 
+            checkNotNull(trackFeature) {
+                "GeoJSON content must have at leas one LineString (track) feature"
+            }
+
+            val track = trackFeature.geometry() as LineString
+
             val poi: MultiPoint =
                 featureCollection
                     ?.features()
@@ -59,21 +57,13 @@ class GeoJsonTrackData(
                     ?.filterIsInstance(Point::class.java)
                     .let { MultiPoint.fromLngLats(it ?: emptyList()) }
 
-            checkNotNull(trackFeature) {
-                "GeoJSON content must have at leas one LineString (track) feature"
-            }
-
-            checkNotNull(trackFeature.geometry()) {
-                "The track feature must have a geometry"
-            }
-
             val name = trackFeature
                 .getStringProperty("name")
                 ?.takeIf(String::isNotEmpty)
 
             return GeoJsonTrackData(
                 name = name,
-                trackFeature = trackFeature,
+                track = track,
                 poi = poi,
             )
         }

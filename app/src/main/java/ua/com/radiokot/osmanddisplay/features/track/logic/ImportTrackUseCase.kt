@@ -6,6 +6,8 @@ import com.mapbox.common.TileRegionLoadOptions
 import com.mapbox.common.TileStore
 import com.mapbox.common.TilesetDescriptor
 import com.mapbox.geojson.Geometry
+import com.mapbox.geojson.LineString
+import com.mapbox.geojson.MultiPoint
 import io.reactivex.Single
 import io.reactivex.disposables.Disposable
 import ua.com.radiokot.osmanddisplay.base.extension.kLogger
@@ -18,7 +20,8 @@ import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksR
  */
 class ImportTrackUseCase(
     private val name: String,
-    private val geometry: Geometry,
+    private val geometry: LineString,
+    private val poi: MultiPoint,
     private val thumbnail: Bitmap,
     private val importedTracksRepository: ImportedTracksRepository,
     private val tileStore: TileStore,
@@ -42,6 +45,7 @@ class ImportTrackUseCase(
         return importedTracksRepository.importTrack(
             name = name,
             geometry = geometry,
+            poi = poi,
             thumbnail = thumbnail,
         )
     }

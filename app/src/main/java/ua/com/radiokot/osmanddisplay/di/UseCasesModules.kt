@@ -2,7 +2,8 @@ package ua.com.radiokot.osmanddisplay.di
 
 import android.app.Activity
 import android.graphics.Bitmap
-import com.mapbox.geojson.Geometry
+import com.mapbox.geojson.LineString
+import com.mapbox.geojson.MultiPoint
 import org.koin.core.module.Module
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
@@ -34,10 +35,11 @@ val useCaseModules: List<Module> = listOf(
             )
         }
 
-        factory { (name: String, geometry: Geometry, thumbnail: Bitmap) ->
+        factory { (name: String, geometry: LineString, poi: MultiPoint, thumbnail: Bitmap) ->
             ImportTrackUseCase(
                 name = name,
                 geometry = geometry,
+                poi = poi,
                 thumbnail = thumbnail,
                 importedTracksRepository = get(),
                 tileStore = get(),

@@ -7,7 +7,7 @@ import com.mapbox.bindgen.Value
 import com.mapbox.common.TileDataDomain
 import com.mapbox.common.TileStore
 import com.mapbox.common.TileStoreOptions
-import com.mapbox.geojson.Geometry
+import com.mapbox.geojson.LineString
 import com.mapbox.maps.*
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
@@ -17,6 +17,7 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import ua.com.radiokot.osmanddisplay.BuildConfig
 import ua.com.radiokot.osmanddisplay.R
+import ua.com.radiokot.osmanddisplay.base.extension.addMultipoint
 import ua.com.radiokot.osmanddisplay.base.extension.addTrack
 import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
@@ -83,8 +84,11 @@ val mapModules: List<Module> = listOf(
     // Snapshotter
     module {
         // Snapshotter for map broadcasting
-        factory(named(InjectedSnapshotter.MAP_BROADCASTING)) { (widthPx: Int, heightPx: Int,
-                                                                   trackGeoJson: String?) ->
+        factory(named(InjectedSnapshotter.MAP_BROADCASTING)) { (
+                                                                   widthPx: Int, heightPx: Int,
+                                                                   trackGeoJson: String?,
+                                                                   poiGeoJson: String?,
+                                                               ) ->
             val options = MapSnapshotOptions.Builder()
                 .size(Size(widthPx.toFloat(), heightPx.toFloat()))
                 .resourceOptions(get())
@@ -98,17 +102,31 @@ val mapModules: List<Module> = listOf(
             FriendlySnapshotter(get(), options, overlayOptions).apply {
                 setStyleUri(getProperty("mapStyleUri"))
 
-                if (trackGeoJson != null) {
+                if (trackGeoJson != null || poiGeoJson != null) {
                     addStyleLoadedListenerOnce {
-                        style.apply {
-                            addTrack(
-                                id = "my-track",
-                                geoJsonData = trackGeoJson,
-                                directionMarker = BitmapFactory.decodeResource(
-                                    androidContext().resources,
-                                    R.drawable.arrow
+                        // 😎
+                        with(style) {
+                            if (trackGeoJson != null) {
+                                addTrack(
+                                    id = "my-track",
+                                    geoJsonData = trackGeoJson,
+                                    directionMarker = BitmapFactory.decodeResource(
+                                        androidContext().resources,
+                                        R.drawable.arrow
+                                    )
                                 )
-                            )
+                            }
+
+                            if (poiGeoJson != null) {
+                                addMultipoint(
+                                    id = "my-poi",
+                                    geoJsonData = poiGeoJson,
+                                    marker = BitmapFactory.decodeResource(
+                                        androidContext().resources,
+                                        R.drawable.marker
+                                    )
+                                )
+                            }
                         }
                     }
                 }
@@ -116,7 +134,7 @@ val mapModules: List<Module> = listOf(
         } bind Snapshotter::class
 
         // Snapshotter for track thumbnails
-        factory(named(InjectedSnapshotter.TRACK_THUMBNAIL)) { (trackGeoJson: String, geometry: Geometry) ->
+        factory(named(InjectedSnapshotter.TRACK_THUMBNAIL)) { (track: LineString, poiGeoJson: String) ->
             val width = 350f
             val options = MapSnapshotOptions.Builder()
                 .size(Size(width, width * 0.75f))
@@ -134,7 +152,7 @@ val mapModules: List<Module> = listOf(
                 addStyleLoadedListenerOnce {
                     setCamera(
                         coreSnapshotter.cameraForGeometry(
-                            geometry,
+                            track,
                             EdgeInsets(20.0, 20.0, 20.0, 20.0),
                             0.0,
                             0.0
@@ -144,9 +162,18 @@ val mapModules: List<Module> = listOf(
                     style.apply {
                         addTrack(
                             id = "my-track",
-                            geoJsonData = trackGeoJson,
+                            geoJsonData = track.toJson(),
                             color = Color.RED,
                             width = width / 120.0,
+                        )
+
+                        addMultipoint(
+                            id = "my-poi",
+                            geoJsonData = poiGeoJson,
+                            marker = BitmapFactory.decodeResource(
+                                androidContext().resources,
+                                R.drawable.red_star
+                            )
                         )
                     }
                 }
@@ -165,7 +192,8 @@ val mapModules: List<Module> = listOf(
                     parametersOf(
                         snapshotSizePx,
                         snapshotSizePx,
-                        track?.geoJsonFile?.readText(Charsets.UTF_8)
+                        track?.readTrackGeoJson(),
+                        track?.readPoiGeoJson(),
                     )
                 },
                 locationMarker = BitmapFactory.decodeResource(

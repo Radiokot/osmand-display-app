@@ -2,7 +2,8 @@ package ua.com.radiokot.osmanddisplay.features.track.data.storage
 
 import android.graphics.Bitmap
 import com.mapbox.geojson.GeoJson
-import com.mapbox.geojson.Geometry
+import com.mapbox.geojson.LineString
+import com.mapbox.geojson.MultiPoint
 import io.reactivex.Completable
 import io.reactivex.Single
 import io.reactivex.rxkotlin.toCompletable
@@ -45,7 +46,8 @@ class ImportedTracksRepository(
 
     fun importTrack(
         name: String,
-        geometry: Geometry,
+        geometry: LineString,
+        poi: MultiPoint,
         thumbnail: Bitmap,
     ): Single<ImportedTrackRecord> {
         val importedAt = Date()
@@ -65,6 +67,7 @@ class ImportedTracksRepository(
                         thumbnailImageFileName = thumbnailImageFileName,
                         importedAt = importedAt,
                         geometry = geometry,
+                        poi = poi,
                     ),
                     fileName = geoJsonFileName
                 )

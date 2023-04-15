@@ -30,6 +30,7 @@ import java.io.InputStreamReader
 class ImportTrackActivity : BaseActivity() {
     private val logger = kLogger("ImportTrackActivity")
 
+    @Suppress("DEPRECATION")
     private val file: LocalFile? by lazy {
         intent.getParcelableExtra(FILE_EXTRA)
     }
@@ -129,7 +130,10 @@ class ImportTrackActivity : BaseActivity() {
 
     private fun initThumbnail() {
         val snapshotter: FriendlySnapshotter = get(named(InjectedSnapshotter.TRACK_THUMBNAIL)) {
-            parametersOf(geoJsonTrackData.trackFeature.toJson(), geoJsonTrackData.trackGeometry)
+            parametersOf(
+                geoJsonTrackData.track,
+                geoJsonTrackData.poi.toJson(),
+            )
         }
 
         snapshotter
@@ -177,7 +181,8 @@ class ImportTrackActivity : BaseActivity() {
         get<ImportTrackUseCase> {
             parametersOf(
                 trackName!!,
-                geoJsonTrackData.trackGeometry,
+                geoJsonTrackData.track,
+                geoJsonTrackData.poi,
                 trackThumbnail!!,
             )
         }
@@ -235,6 +240,7 @@ class ImportTrackActivity : BaseActivity() {
             putString(FILE_CONTENT_EXTRA, fileGeoJsonContent)
         }
 
+        @Suppress("DEPRECATION")
         fun getResult(intent: Intent): ImportedTrackRecord {
             return intent.getParcelableExtra(RESULT_EXTRA)!!
         }

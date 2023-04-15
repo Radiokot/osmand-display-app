@@ -6,10 +6,7 @@ import com.mapbox.maps.Style
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.lineLayer
 import com.mapbox.maps.extension.style.layers.generated.symbolLayer
-import com.mapbox.maps.extension.style.layers.properties.generated.IconRotationAlignment
-import com.mapbox.maps.extension.style.layers.properties.generated.LineCap
-import com.mapbox.maps.extension.style.layers.properties.generated.LineJoin
-import com.mapbox.maps.extension.style.layers.properties.generated.SymbolPlacement
+import com.mapbox.maps.extension.style.layers.properties.generated.*
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 
@@ -46,4 +43,26 @@ fun Style.addTrack(
             iconRotationAlignment(IconRotationAlignment.MAP)
         })
     }
+}
+
+fun Style.addMultipoint(
+    id: String,
+    geoJsonData: String,
+    marker: Bitmap,
+) = apply {
+    addSource(geoJsonSource(id) {
+        data(geoJsonData)
+    })
+
+    val imageId = "$id-poi-marker"
+
+    addImage(imageId, marker)
+
+    addLayer(symbolLayer("$id-multipoint", id) {
+        symbolPlacement(SymbolPlacement.POINT)
+        iconImage(imageId)
+        iconAllowOverlap(true)
+        iconIgnorePlacement(true)
+        iconAnchor(IconAnchor.BOTTOM)
+    })
 }
