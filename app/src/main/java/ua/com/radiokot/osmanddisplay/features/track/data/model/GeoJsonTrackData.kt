@@ -44,7 +44,7 @@ class GeoJsonTrackData(
 
             val name = geoJsonFeature
                 .getStringProperty("name")
-                .takeIf(String::isNotEmpty)
+                ?.takeIf(String::isNotEmpty)
 
             return GeoJsonTrackData(
                 name = name,
