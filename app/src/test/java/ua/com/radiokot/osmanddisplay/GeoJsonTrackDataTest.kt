@@ -34,6 +34,14 @@ class GeoJsonTrackDataTest {
         Assert.assertEquals(48.434744933730215, poi.coordinates().last().latitude(), 0.000001)
     }
 
+    @Test
+    fun readWithTrailingCommas() {
+        val content = TestAssets.readText("BRouterTrackWithTrailingComma.geojson")
+        val geoJsonTrackData = GeoJsonTrackData.fromFileContent(content)
+        
+        Assert.assertEquals(2, geoJsonTrackData.poi.coordinates().size)
+    }
+
     @Test(expected = IllegalStateException::class)
     fun readEmptyFeatureCollection() {
         val content = """

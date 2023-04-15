@@ -37,7 +37,9 @@ class GeoJsonTrackData(
                 featureCollection != null ->
                     featureCollection
                         .features()
-                        ?.find { it.geometry() is LineString }
+                        // Safe calls are required.
+                        // Arbitrary file parsing result may contain null features.
+                        ?.find { it?.geometry() is LineString }
                 geoJsonType == "Feature" ->
                     Feature.fromJson(content)
                 else ->
@@ -53,8 +55,9 @@ class GeoJsonTrackData(
             val poi: MultiPoint =
                 featureCollection
                     ?.features()
-                    ?.map(Feature::geometry)
-                    ?.filterIsInstance(Point::class.java)
+                    // Safe calls are required. See above.
+                    ?.mapNotNull { it?.geometry() }
+                    ?.filterIsInstance<Point>()
                     .let { MultiPoint.fromLngLats(it ?: emptyList()) }
 
             val name = trackFeature
