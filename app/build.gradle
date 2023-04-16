@@ -37,6 +37,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -83,7 +84,7 @@ dependencies {
     implementation 'com.mikepenz:fastadapter:5.7.0'
     implementation 'com.squareup.picasso:picasso:2.8'
 
-    debugImplementation 'com.github.kk121:Android-Debug-Tools:1.0'
+    implementation 'com.github.kk121:Android-Debug-Tools:1.0'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
