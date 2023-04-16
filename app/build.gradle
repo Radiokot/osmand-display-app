@@ -19,7 +19,7 @@ android {
         minSdk 26
         targetSdk 33
         versionCode 1
-        versionName "0.1"
+        versionName "1.0.0"
 
         if (keystoreProperties['mapboxPublicToken'] != null) {
             buildConfigField 'String', 'MAPBOX_PUBLIC_TOKEN', "\"" + keystoreProperties['mapboxPublicToken'] + "\""
