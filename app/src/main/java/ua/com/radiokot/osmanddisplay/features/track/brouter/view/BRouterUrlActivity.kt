@@ -1,7 +1,10 @@
 package ua.com.radiokot.osmanddisplay.features.track.brouter.view
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
@@ -16,6 +19,12 @@ import ua.com.radiokot.osmanddisplay.features.track.view.ImportTrackActivity
 
 class BRouterUrlActivity : BaseActivity() {
     private val logger = kLogger("BRouterUrlActivity")
+
+    private val trackImportLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult(),
+            this::onTrackImportResult
+        )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,11 +43,10 @@ class BRouterUrlActivity : BaseActivity() {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
                 onSuccess = { geoJsonTrackData ->
-                    startActivity(
+                    trackImportLauncher.launch(
                         Intent(this, ImportTrackActivity::class.java)
                             .putExtras(ImportTrackActivity.getBundle(geoJsonTrackData))
                     )
-                    finish()
                 },
                 onError = {
                     logger.error(it) { "error_occurred" }
@@ -48,5 +56,12 @@ class BRouterUrlActivity : BaseActivity() {
                 }
             )
             .addTo(compositeDisposable)
+    }
+
+    private fun onTrackImportResult(result: ActivityResult) {
+        if (result.resultCode == Activity.RESULT_OK) {
+            toastManager.long(R.string.brouter_track_successfully_imported)
+        }
+        finish()
     }
 }
