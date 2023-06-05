@@ -30,6 +30,7 @@ class SnapshotterMapFrameFactory(
     private val locationMarker: Bitmap,
     private val frameWidthPx: Int,
     private val frameHeightPx: Int,
+    private val bearingLineColor: Int = Color.BLACK,
 ) : MapFrameFactory {
     private val logger = kLogger("SnapshotterMFF")
 
@@ -200,7 +201,7 @@ class SnapshotterMapFrameFactory(
                 locationX,
                 locationY - BEARING_CIRCLE_RADIUS,
                 Paint().apply {
-                    color = Color.BLACK
+                    color = bearingLineColor
                     strokeWidth = BEARING_LINE_WIDTH
                 }
             )

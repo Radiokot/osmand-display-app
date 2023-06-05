@@ -1,14 +1,28 @@
 package ua.com.radiokot.osmanddisplay.di
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 import com.mapbox.bindgen.Value
 import com.mapbox.common.TileDataDomain
 import com.mapbox.common.TileStore
 import com.mapbox.common.TileStoreOptions
 import com.mapbox.geojson.LineString
-import com.mapbox.maps.*
+import com.mapbox.maps.EdgeInsets
+import com.mapbox.maps.GlyphsRasterizationMode
+import com.mapbox.maps.MapSnapshotOptions
+import com.mapbox.maps.OfflineManager
+import com.mapbox.maps.ResourceOptions
+import com.mapbox.maps.Size
+import com.mapbox.maps.SnapshotOverlayOptions
+import com.mapbox.maps.Snapshotter
+import com.mapbox.maps.StylePackLoadOptions
+import com.mapbox.maps.TileStoreUsageMode
+import com.mapbox.maps.TilesetDescriptorOptions
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.core.parameter.parametersOf
@@ -26,6 +40,7 @@ import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFacto
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import kotlin.math.ceil
 import kotlin.math.floor
+
 
 enum class InjectedSnapshotter {
     TRACK_THUMBNAIL,
@@ -183,9 +198,43 @@ val mapModules: List<Module> = listOf(
 
     // Map frame factory
     module {
-        factory<MapFrameFactory> { (track: ImportedTrackRecord?) ->
+        factory<MapFrameFactory> { (track: ImportedTrackRecord?, invertLocationMarkerColor: Boolean) ->
             val snapshotSizePx = 450
             val frameSizePx = 200
+
+            val locationMarker: Bitmap
+            val bearingLineColor: Int
+
+            if (!invertLocationMarkerColor) {
+                bearingLineColor = Color.BLACK
+                locationMarker = BitmapFactory.decodeResource(
+                    get<Context>().resources,
+                    R.drawable.location
+                )
+            } else {
+                bearingLineColor = Color.WHITE
+                val defaultLocationMarker = BitmapFactory.decodeResource(
+                    get<Context>().resources,
+                    R.drawable.location
+                )
+                locationMarker = Bitmap.createBitmap(
+                    defaultLocationMarker.width,
+                    defaultLocationMarker.height,
+                    defaultLocationMarker.config
+                )
+                val inversionPaint = Paint().apply {
+                    colorFilter = ColorMatrixColorFilter(
+                        floatArrayOf(
+                            -1f, 0f, 0f, 0f, 255f,
+                            0f, -1f, 0f, 0f, 255f,
+                            0f, 0f, -1f, 0f, 255f,
+                            0f, 0f, 0f, 1f, 0f
+                        )
+                    )
+                }
+                Canvas(locationMarker).drawBitmap(defaultLocationMarker, 0f, 0f, inversionPaint)
+                defaultLocationMarker.recycle()
+            }
 
             SnapshotterMapFrameFactory(
                 snapshotter = get(named(InjectedSnapshotter.MAP_BROADCASTING)) {
@@ -196,12 +245,10 @@ val mapModules: List<Module> = listOf(
                         track?.readPoiGeoJson(),
                     )
                 },
-                locationMarker = BitmapFactory.decodeResource(
-                    get<Context>().resources,
-                    R.drawable.location
-                ),
+                locationMarker = locationMarker,
                 frameWidthPx = frameSizePx,
                 frameHeightPx = frameSizePx,
+                bearingLineColor = bearingLineColor,
             )
         }
     }

@@ -59,9 +59,11 @@ class MapBroadcastingService : Service(), KoinComponent {
     private lateinit var commandSender: DisplayCommandSender
     private lateinit var compositeDisposable: CompositeDisposable
     private lateinit var binder: Binder
+    private var composedFramesCounter = 0
 
     // Needs to be injected in the main thread.
     private lateinit var mapFrameFactory: MapFrameFactory
+    private lateinit var invertedLocationMarkerMapFrameFactory: MapFrameFactory
 
     private val locationClient: FusedLocationProviderClient by inject()
 
@@ -112,7 +114,8 @@ class MapBroadcastingService : Service(), KoinComponent {
 
         this.deviceAddress = deviceAddress
         commandSender = get { parametersOf(deviceAddress) }
-        mapFrameFactory = get { parametersOf(track) }
+        mapFrameFactory = get { parametersOf(track, false) }
+        invertedLocationMarkerMapFrameFactory = get { parametersOf(track, true) }
 
         subscribeToLocations()
 
@@ -171,7 +174,15 @@ class MapBroadcastingService : Service(), KoinComponent {
             // Buffer size is set to 1 to eliminate queueing of outdated locations.
             .observeOn(Schedulers.io(), false, 1)
             .concatMapSingle { location ->
-                mapFrameFactory
+                // Use factory with inverted location marker from time to time
+                // to avoid "burning out" the location marker on the e-ink surface.
+                val frameFactory =
+                    if ((++composedFramesCounter) % 3 == 0)
+                        invertedLocationMarkerMapFrameFactory
+                    else
+                        mapFrameFactory
+
+                frameFactory
                     .composeFrame(
                         location = location,
                         cameraZoom = mapCameraZoom,
