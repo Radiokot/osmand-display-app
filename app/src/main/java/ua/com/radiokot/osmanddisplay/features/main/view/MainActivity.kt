@@ -24,7 +24,17 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_main.capture_map_frame_button
+import kotlinx.android.synthetic.main.activity_main.clear_imported_tracks_button
+import kotlinx.android.synthetic.main.activity_main.clear_screen_button
+import kotlinx.android.synthetic.main.activity_main.map_frame_image_view
+import kotlinx.android.synthetic.main.activity_main.map_track_text_view
+import kotlinx.android.synthetic.main.activity_main.open_dev_tools_button
+import kotlinx.android.synthetic.main.activity_main.randomize_bearing_check_box
+import kotlinx.android.synthetic.main.activity_main.selected_device_text_view
+import kotlinx.android.synthetic.main.activity_main.send_random_direction_button
+import kotlinx.android.synthetic.main.activity_main.start_map_broadcasting_button
+import kotlinx.android.synthetic.main.activity_main.stop_map_broadcasting_button
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.getKoin
 import org.koin.core.parameter.parametersOf
@@ -211,7 +221,7 @@ class MainActivity : BaseActivity() {
     private fun captureMapFrame() {
         captureDisposable?.dispose()
 
-        val mapFrameFactory: MapFrameFactory = get { parametersOf(selectedTrackRecord) }
+        val mapFrameFactory: MapFrameFactory = get { parametersOf(selectedTrackRecord, false) }
 
         captureDisposable = mapFrameFactory
             .composeFrame(

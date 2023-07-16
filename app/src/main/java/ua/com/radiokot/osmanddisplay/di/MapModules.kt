@@ -205,18 +205,16 @@ val mapModules: List<Module> = listOf(
             val locationMarker: Bitmap
             val bearingLineColor: Int
 
+            val defaultLocationMarker = BitmapFactory.decodeResource(
+                get<Context>().resources,
+                R.drawable.location
+            )
+
             if (!invertLocationMarkerColor) {
                 bearingLineColor = Color.BLACK
-                locationMarker = BitmapFactory.decodeResource(
-                    get<Context>().resources,
-                    R.drawable.location
-                )
+                locationMarker = defaultLocationMarker
             } else {
                 bearingLineColor = Color.WHITE
-                val defaultLocationMarker = BitmapFactory.decodeResource(
-                    get<Context>().resources,
-                    R.drawable.location
-                )
                 locationMarker = Bitmap.createBitmap(
                     defaultLocationMarker.width,
                     defaultLocationMarker.height,
