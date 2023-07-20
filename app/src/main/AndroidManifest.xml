@@ -51,6 +51,7 @@
             android:label="@string/import_track" />
         <activity
             android:name=".features.track.brouter.view.BRouterUrlActivity"
+            android:excludeFromRecents="true"
             android:exported="true"
             android:theme="@style/Theme.Material3.DayNight.Dialog">
             <intent-filter android:label="@string/import_track_from_brouter">
@@ -69,8 +70,8 @@
         <activity
             android:name="com.krishna.debug_tools.activity.ActivityDebugTools"
             android:exported="false"
-            tools:replace="android:theme"
-            android:theme="@style/Theme.Material3.Light.NoActionBar" />
+            android:theme="@style/Theme.Material3.Light.NoActionBar"
+            tools:replace="android:theme" />
 
     </application>
 
