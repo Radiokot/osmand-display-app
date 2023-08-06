@@ -18,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts.StartIntentSend
 import androidx.activity.result.registerForActivityResult
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.color.MaterialColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.krishna.debug_tools.activity.ActivityDebugTools
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -151,14 +152,7 @@ class MainActivity : BaseActivity() {
         }
 
         clear_imported_tracks_button.setOnClickListener {
-            get<ClearImportedTracksUseCase>()
-                .perform()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    selectedTrack.value = SelectedTrack.Nothing
-                    toastManager.short("Imported tracks cleared")
-                }
-                .addTo(compositeDisposable)
+            clearImportedTracksWithConfirmation()
         }
 
         selectedDevice
@@ -169,6 +163,7 @@ class MainActivity : BaseActivity() {
                         send_random_direction_button.isEnabled = false
                         clear_screen_button.isEnabled = false
                     }
+
                     is SelectedDevice.Selected -> {
                         start_map_broadcasting_button.isEnabled = true
                         send_random_direction_button.isEnabled = true
@@ -176,6 +171,24 @@ class MainActivity : BaseActivity() {
                     }
                 }
             }
+    }
+
+    private fun clearImportedTracksWithConfirmation() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.clear_imported_tracks)
+            .setMessage(R.string.clear_imported_tracks_confirmation)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                get<ClearImportedTracksUseCase>()
+                    .perform()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe {
+                        selectedTrack.value = SelectedTrack.Nothing
+                        toastManager.short(R.string.imported_tracks_cleared)
+                    }
+                    .addTo(compositeDisposable)
+            }
+            .setNegativeButton(R.string.no, null)
+            .show()
     }
 
     private val turnTypes = setOf(1, 2, 3, 4, 5, 6, 7, 10, 11)
@@ -280,6 +293,7 @@ class MainActivity : BaseActivity() {
                             )
                         }
                     }
+
                     is SelectedDevice.Selected -> {
                         selected_device_text_view.apply {
                             text =
@@ -362,6 +376,7 @@ class MainActivity : BaseActivity() {
                     is SelectedTrack.Nothing -> {
                         map_track_text_view.setText(R.string.no_track)
                     }
+
                     is SelectedTrack.Selected -> {
                         map_track_text_view.text = selectedTrack.name
                     }
