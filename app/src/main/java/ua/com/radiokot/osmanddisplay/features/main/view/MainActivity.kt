@@ -42,6 +42,7 @@ import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
 import ua.com.radiokot.osmanddisplay.base.extension.kLogger
+import ua.com.radiokot.osmanddisplay.base.extension.setThrottleOnClickListener
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandSender
 import ua.com.radiokot.osmanddisplay.features.broadcasting.model.DisplayCommand
@@ -275,7 +276,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initDeviceSelection() {
-        selected_device_text_view.setOnClickListener {
+        selected_device_text_view.setThrottleOnClickListener {
             scanAndSelectDevice()
         }
 
@@ -357,7 +358,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initTrackSelection() {
-        map_track_text_view.setOnClickListener {
+        map_track_text_view.setThrottleOnClickListener {
             selectTrack()
         }
 
