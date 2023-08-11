@@ -53,8 +53,15 @@
             android:name=".features.track.brouter.view.BRouterUrlActivity"
             android:excludeFromRecents="true"
             android:exported="true"
+            android:icon="@drawable/red_star"
+            android:label="@string/import_track_from_brouter"
             android:theme="@style/Theme.Material3.DayNight.Dialog">
-            <intent-filter android:label="@string/import_track_from_brouter">
+
+            <!--For some reason, the icon is shown in the notification quick action
+                only if it is a drawable.
+                Mipmap icon, even png, is shown as black square. -->
+
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
