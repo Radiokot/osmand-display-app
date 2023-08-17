@@ -25,11 +25,13 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
+        android:ellipsize="end"
         android:maxLines="2"
-        android:text="@string/track"
         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/track_thumbnail_image_view"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="tongue spider bamboo young follow arm " />
 
     <TextView
         android:id="@+id/track_imported_at_text_view"
