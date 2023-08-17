@@ -43,6 +43,7 @@
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="24dp"
             android:hint="@string/track_name"
+            app:endIconMode="clear_text"
             app:layout_constraintBottom_toTopOf="@id/import_track_button"
             app:layout_constraintTop_toBottomOf="@id/track_thumbnail_image_view"
             app:layout_constraintVertical_chainStyle="spread_inside">
