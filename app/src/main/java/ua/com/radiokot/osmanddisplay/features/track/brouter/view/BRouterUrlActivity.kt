@@ -13,9 +13,11 @@ import org.koin.android.ext.android.get
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.extension.kLogger
+import ua.com.radiokot.osmanddisplay.base.util.localfile.LocalFile
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.track.brouter.logic.GetTrackFromBRouterWebUseCase
 import ua.com.radiokot.osmanddisplay.features.track.view.ImportTrackActivity
+import java.io.File
 
 class BRouterUrlActivity : BaseActivity() {
     private val logger = kLogger("BRouterUrlActivity")
@@ -40,12 +42,20 @@ class BRouterUrlActivity : BaseActivity() {
         get<GetTrackFromBRouterWebUseCase> { parametersOf(uri) }
             .perform()
             .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .map { geoJsonTrackString ->
+                // Write the content to a file, as it may be too big
+                // for an activity transaction.
+                File(filesDir, "brouter.geojson")
+                    .apply { writeText(geoJsonTrackString) }
+                    .let(LocalFile.Companion::fromFile)
+            }
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
-                onSuccess = { geoJsonTrackData ->
+                onSuccess = { geoJsonFile ->
                     trackImportLauncher.launch(
                         Intent(this, ImportTrackActivity::class.java)
-                            .putExtras(ImportTrackActivity.getBundle(geoJsonTrackData))
+                            .putExtras(ImportTrackActivity.getBundle(geoJsonFile))
                     )
                 },
                 onError = {

@@ -31,11 +31,10 @@ class ImportTrackActivity : BaseActivity() {
     private val logger = kLogger("ImportTrackActivity")
 
     @Suppress("DEPRECATION")
-    private val file: LocalFile? by lazy {
-        intent.getParcelableExtra(FILE_EXTRA)
-    }
-    private val fileGeoJsonContent: String? by lazy {
-        intent.getStringExtra(FILE_CONTENT_EXTRA)
+    private val file: LocalFile by lazy {
+        requireNotNull(intent.getParcelableExtra(FILE_EXTRA)) {
+            "No $FILE_EXTRA specified"
+        }
     }
 
     private lateinit var geoJsonTrackData: GeoJsonTrackData
@@ -97,35 +96,24 @@ class ImportTrackActivity : BaseActivity() {
         canImport = false
     }
 
-    private fun tryToReadFile(): GeoJsonTrackData? {
-        return try {
-            val file = this.file
-            val fileGeoJsonContent = this.fileGeoJsonContent
-
-            val fileContent: String
-            if (file != null) {
-                require(file.extension in GEOJSON_EXTENSIONS) {
-                    "The file has an unsupported extension: ${file.extension}"
-                }
-
-                require(file.size <= MAX_FILE_SIZE_BYTES) {
-                    "The file is too big: ${file.size} bytes"
-                }
-
-                fileContent = contentResolver.openInputStream(file.uri).use {
-                    InputStreamReader(it).readText()
-                }
-            } else if (fileGeoJsonContent != null) {
-                fileContent = fileGeoJsonContent
-            } else {
-                throw IllegalStateException("There must be a file or a GeoJSON content")
-            }
-
-            GeoJsonTrackData.fromFileContent(fileContent)
-        } catch (e: Exception) {
-            logger.error(e) { "readFileOrFinish(): check_failed" }
-            null
+    private fun tryToReadFile(): GeoJsonTrackData? = try {
+        require(file.extension in GEOJSON_EXTENSIONS) {
+            "The file has an unsupported extension: ${file.extension}"
         }
+
+        // Damn, I can't remember the rationale for this limit 🤦🏻.
+        require(file.size <= MAX_FILE_SIZE_BYTES) {
+            "The file is too big: ${file.size} bytes"
+        }
+
+        contentResolver.openInputStream(file.uri).use {
+            InputStreamReader(it)
+                .readText()
+                .let(GeoJsonTrackData.Companion::fromFileContent)
+        }
+    } catch (e: Exception) {
+        logger.error(e) { "readFileOrFinish(): check_failed" }
+        null
     }
 
     private fun initThumbnail() {
@@ -158,7 +146,7 @@ class ImportTrackActivity : BaseActivity() {
         track_name_edit_text.addTextChangedListener { text ->
             trackName = text?.toString()
         }
-        track_name_edit_text.setText(geoJsonTrackData.name ?: file?.name)
+        track_name_edit_text.setText(geoJsonTrackData.name ?: file.name)
     }
 
     private fun initButtons() {
@@ -226,18 +214,15 @@ class ImportTrackActivity : BaseActivity() {
 
     companion object {
         private const val FILE_EXTRA = "file"
-        private const val FILE_CONTENT_EXTRA = "geojson_data"
         private const val RESULT_EXTRA = "result"
 
         private const val MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024
         private val GEOJSON_EXTENSIONS = setOf("geojson", "json")
 
+        // Import is only allowed from a file, as passing the GeoJSON content string
+        // in an Intent can easily overcome the activity transaction size limit.
         fun getBundle(file: LocalFile) = Bundle().apply {
             putParcelable(FILE_EXTRA, file)
-        }
-
-        fun getBundle(fileGeoJsonContent: String) = Bundle().apply {
-            putString(FILE_CONTENT_EXTRA, fileGeoJsonContent)
         }
 
         @Suppress("DEPRECATION")
