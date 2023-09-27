@@ -17,7 +17,7 @@ dependencyResolutionManagement {
     repositories {
         ivy {
             name = "OsmAndBinariesIvy"
-            url = "https://builder.osmand.net"
+            url = "https://creator.osmand.net"
             patternLayout {
                 artifact "ivy/[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]"
             }
