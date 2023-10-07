@@ -1,9 +1,6 @@
 package ua.com.radiokot.osmanddisplay.di
 
 import android.app.Activity
-import android.graphics.Bitmap
-import com.mapbox.geojson.LineString
-import com.mapbox.geojson.MultiPoint
 import org.koin.core.module.Module
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
@@ -11,7 +8,7 @@ import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceU
 import ua.com.radiokot.osmanddisplay.features.track.brouter.logic.GetTrackFromBRouterWebUseCase
 import ua.com.radiokot.osmanddisplay.features.track.logic.ClearImportedTracksUseCase
 import ua.com.radiokot.osmanddisplay.features.track.logic.ImportTrackUseCase
-import java.util.*
+import java.util.UUID
 
 val useCaseModules: List<Module> = listOf(
     // BLE device
@@ -35,16 +32,19 @@ val useCaseModules: List<Module> = listOf(
             )
         }
 
-        factory { (name: String, geometry: LineString, poi: MultiPoint, thumbnail: Bitmap) ->
-            ImportTrackUseCase(
-                name = name,
-                geometry = geometry,
-                poi = poi,
-                thumbnail = thumbnail,
-                importedTracksRepository = get(),
-                tileStore = get(),
-                tilesetDescriptor = get(),
-            )
+        single {
+            ImportTrackUseCase.Factory { name, geometry, poi, thumbnail, onlinePreviewUrl ->
+                ImportTrackUseCase(
+                    name = name,
+                    geometry = geometry,
+                    poi = poi,
+                    thumbnail = thumbnail,
+                    onlinePreviewUrl = onlinePreviewUrl,
+                    importedTracksRepository = get(),
+                    tileStore = get(),
+                    tilesetDescriptor = get(),
+                )
+            }
         }
 
         factory {

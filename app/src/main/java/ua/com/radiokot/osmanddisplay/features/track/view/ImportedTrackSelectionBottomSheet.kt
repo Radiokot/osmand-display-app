@@ -11,16 +11,21 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.mikepenz.fastadapter.FastAdapter
 import com.mikepenz.fastadapter.adapters.ItemAdapter
+import com.mikepenz.fastadapter.listeners.addClickListener
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
-import kotlinx.android.synthetic.main.bottom_sheet_imported_track_selection.*
+import kotlinx.android.synthetic.main.bottom_sheet_imported_track_selection.empty_view
+import kotlinx.android.synthetic.main.bottom_sheet_imported_track_selection.import_track_button
+import kotlinx.android.synthetic.main.bottom_sheet_imported_track_selection.import_track_header_button
+import kotlinx.android.synthetic.main.bottom_sheet_imported_track_selection.tracks_recycler_view
 import org.koin.android.ext.android.inject
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.util.localfile.OpenLocalFileContract
 import ua.com.radiokot.osmanddisplay.base.view.dateformat.DateFormats
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksRepository
+import ua.com.radiokot.osmanddisplay.features.track.logic.OpenTrackOnlinePreviewUseCase
 import java.text.DateFormat
 
 class ImportedTrackSelectionBottomSheet :
@@ -64,13 +69,29 @@ class ImportedTrackSelectionBottomSheet :
     }
 
     private fun initList() {
-        val adapter = FastAdapter.with(itemAdapter)
-        adapter.onClickListener = { _, _, item, _ ->
-            if (item.source != null) {
-                onTrackSelected(item.source)
-            }
+        val adapter = FastAdapter.with(itemAdapter).apply {
+            addClickListener(
+                resolveView = { null },
+                resolveViews = { viewHolder: ImportedTrackListItem.ViewHolder ->
+                    listOf(viewHolder.itemView, viewHolder.viewOnlineButton)
+                },
+                onClick = { view, _, _, item ->
+                    if (item.source == null) {
+                        return@addClickListener
+                    }
 
-            false
+                    when (view.id) {
+                        R.id.view_online_button ->
+                            openTrackOnlinePreview(checkNotNull(item.source.onlinePreviewUrl) {
+                                "There must be the preview URL the button is visible"
+                            })
+
+                        else ->
+                            onTrackSelected(item.source)
+                    }
+
+                }
+            )
         }
 
         tracks_recycler_view.layoutManager = LinearLayoutManager(context)
@@ -121,7 +142,12 @@ class ImportedTrackSelectionBottomSheet :
         if (result is OpenLocalFileContract.Result.Opened) {
             trackImportLauncher.launch(
                 Intent(requireContext(), ImportTrackActivity::class.java)
-                    .putExtras(ImportTrackActivity.getBundle(result.file))
+                    .putExtras(
+                        ImportTrackActivity.getBundle(
+                            file = result.file,
+                            onlinePreviewUrl = null,
+                        )
+                    )
             )
         }
     }
@@ -140,6 +166,12 @@ class ImportedTrackSelectionBottomSheet :
             onTrackSelected(ImportTrackActivity.getResult(data))
         }
     }
+
+    private fun openTrackOnlinePreview(onlinePreviewUrl: String) =
+        OpenTrackOnlinePreviewUseCase(
+            onlinePreviewUrl = onlinePreviewUrl,
+            activity = requireActivity(),
+        )()
 
     override fun onDestroyView() {
         super.onDestroyView()

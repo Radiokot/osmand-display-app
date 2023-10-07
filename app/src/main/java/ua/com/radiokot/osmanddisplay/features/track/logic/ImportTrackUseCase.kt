@@ -5,7 +5,6 @@ import com.mapbox.common.NetworkRestriction
 import com.mapbox.common.TileRegionLoadOptions
 import com.mapbox.common.TileStore
 import com.mapbox.common.TilesetDescriptor
-import com.mapbox.geojson.Geometry
 import com.mapbox.geojson.LineString
 import com.mapbox.geojson.MultiPoint
 import io.reactivex.Single
@@ -17,12 +16,15 @@ import ua.com.radiokot.osmanddisplay.features.track.data.storage.ImportedTracksR
 /**
  * Imports a track defined by [name], [geometry] and [thumbnail] to the
  * [importedTracksRepository] and downloads map tiles for it.
+ *
+ * @param onlinePreviewUrl optional URL of the online track preview
  */
 class ImportTrackUseCase(
     private val name: String,
     private val geometry: LineString,
     private val poi: MultiPoint,
     private val thumbnail: Bitmap,
+    private val onlinePreviewUrl: String?,
     private val importedTracksRepository: ImportedTracksRepository,
     private val tileStore: TileStore,
     private val tilesetDescriptor: TilesetDescriptor,
@@ -31,7 +33,7 @@ class ImportTrackUseCase(
 
     private lateinit var importedTrack: ImportedTrackRecord
 
-    fun perform(): Single<ImportedTrackRecord> {
+    operator fun invoke(): Single<ImportedTrackRecord> {
         return importTrack()
             .doOnSuccess { importedTrack = it }
             .flatMap {
@@ -47,6 +49,7 @@ class ImportTrackUseCase(
             geometry = geometry,
             poi = poi,
             thumbnail = thumbnail,
+            onlinePreviewUrl = onlinePreviewUrl,
         )
     }
 
@@ -84,5 +87,15 @@ class ImportTrackUseCase(
 
             override fun isDisposed(): Boolean = isDisposed
         })
+    }
+
+    fun interface Factory {
+        fun get(
+            name: String,
+            geometry: LineString,
+            poi: MultiPoint,
+            thumbnail: Bitmap,
+            onlinePreviewUrl: String?
+        ): ImportTrackUseCase
     }
 }

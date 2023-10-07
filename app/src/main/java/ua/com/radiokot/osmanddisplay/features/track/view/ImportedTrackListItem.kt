@@ -1,13 +1,17 @@
 package ua.com.radiokot.osmanddisplay.features.track.view
 
-import android.graphics.BitmapFactory
 import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.view.isVisible
 import com.mikepenz.fastadapter.FastAdapter
 import com.mikepenz.fastadapter.items.AbstractItem
 import com.squareup.picasso.Picasso
-import kotlinx.android.synthetic.main.list_item_imported_track.view.*
+import kotlinx.android.synthetic.main.list_item_imported_track.view.track_imported_at_text_view
+import kotlinx.android.synthetic.main.list_item_imported_track.view.track_name_text_view
+import kotlinx.android.synthetic.main.list_item_imported_track.view.track_thumbnail_image_view
+import kotlinx.android.synthetic.main.list_item_imported_track.view.view_online_button
 import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import java.io.File
@@ -17,6 +21,7 @@ data class ImportedTrackListItem(
     val name: String,
     val importedAt: String,
     val thumbnailImageFile: File?,
+    val isViewOnlineButtonVisible: Boolean,
     val source: ImportedTrackRecord? = null,
 ) : AbstractItem<ImportedTrackListItem.ViewHolder>() {
     constructor(
@@ -26,6 +31,7 @@ data class ImportedTrackListItem(
         name = source.name,
         importedAt = dateFormat.format(source.importedAt),
         thumbnailImageFile = source.thumbnailImageFile,
+        isViewOnlineButtonVisible = source.onlinePreviewUrl != null,
         source = source,
     )
 
@@ -41,10 +47,12 @@ data class ImportedTrackListItem(
         private val nameTextView: TextView = view.track_name_text_view
         private val importedAtTextView: TextView = view.track_imported_at_text_view
         private val thumbnailImageView: ImageView = view.track_thumbnail_image_view
+        val viewOnlineButton: Button = view.view_online_button
 
         override fun bindView(item: ImportedTrackListItem, payloads: List<Any>) {
             nameTextView.text = item.name
             importedAtTextView.text = item.importedAt
+            viewOnlineButton.isVisible = item.isViewOnlineButtonVisible
 
             if (item.thumbnailImageFile != null) {
                 Picasso.get()

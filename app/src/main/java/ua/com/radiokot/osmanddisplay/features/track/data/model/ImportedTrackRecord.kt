@@ -1,17 +1,22 @@
 package ua.com.radiokot.osmanddisplay.features.track.data.model
 
 import android.os.Parcelable
-import com.mapbox.geojson.*
+import com.mapbox.geojson.Feature
+import com.mapbox.geojson.FeatureCollection
+import com.mapbox.geojson.GeoJson
+import com.mapbox.geojson.LineString
+import com.mapbox.geojson.MultiPoint
 import kotlinx.android.parcel.Parcelize
 import java.io.File
-import java.util.*
+import java.util.Date
 
 @Parcelize
 class ImportedTrackRecord(
     val name: String,
     val importedAt: Date,
     val thumbnailImageFile: File,
-    val geoJsonFile: File
+    val geoJsonFile: File,
+    val onlinePreviewUrl: String?,
 ) : Parcelable {
     val id: String
         get() = geoJsonFile.nameWithoutExtension
@@ -65,12 +70,14 @@ class ImportedTrackRecord(
             }
 
             val thumbnailImageFileName = trackFeature.getStringProperty("thumbnail")
+            val onlinePreviewUrl = trackFeature.getStringProperty("online_preview_url")
 
             return ImportedTrackRecord(
                 name = trackFeature.getStringProperty("name"),
                 importedAt = Date(trackFeature.getNumberProperty("imported_at").toLong()),
                 thumbnailImageFile = File(file.parentFile, thumbnailImageFileName),
-                geoJsonFile = file
+                geoJsonFile = file,
+                onlinePreviewUrl = onlinePreviewUrl,
             )
         }
 
@@ -80,6 +87,7 @@ class ImportedTrackRecord(
             geometry: LineString,
             poi: MultiPoint,
             thumbnailImageFileName: String,
+            onlinePreviewUrl: String?,
         ): GeoJson = FeatureCollection.fromFeatures(
             arrayOf(
                 Feature.fromGeometry(geometry).apply {
@@ -88,6 +96,9 @@ class ImportedTrackRecord(
                     addStringProperty("type", "track")
                     addNumberProperty("imported_at", importedAt.time)
                     addStringProperty("thumbnail", thumbnailImageFileName)
+                    onlinePreviewUrl?.also {
+                        addStringProperty("online_preview_url", it)
+                    }
                 },
                 Feature.fromGeometry(poi).apply {
                     addStringProperty("type", "extra-poi")

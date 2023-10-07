@@ -55,7 +55,12 @@ class BRouterUrlActivity : BaseActivity() {
                 onSuccess = { geoJsonFile ->
                     trackImportLauncher.launch(
                         Intent(this, ImportTrackActivity::class.java)
-                            .putExtras(ImportTrackActivity.getBundle(geoJsonFile))
+                            .putExtras(
+                                ImportTrackActivity.getBundle(
+                                    file = geoJsonFile,
+                                    onlinePreviewUrl = uri.toString(),
+                                )
+                            )
                     )
                 },
                 onError = {

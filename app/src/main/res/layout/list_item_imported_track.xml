@@ -40,7 +40,22 @@
         android:layout_marginTop="8dp"
         android:text="02 January 2022"
         android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        app:layout_constraintEnd_toStartOf="@id/view_online_button"
         app:layout_constraintStart_toStartOf="@id/track_name_text_view"
         app:layout_constraintTop_toBottomOf="@id/track_name_text_view" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/view_online_button"
+        style="@style/Widget.Material3.Button.IconButton.Filled"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:contentDescription="@string/view_track_online"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:paddingHorizontal="7dp"
+        android:tooltipText="@string/view_track_online"
+        app:icon="@drawable/ic_open_in"
+        app:iconSize="14dp"
+        app:layout_constraintEnd_toEndOf="@id/track_name_text_view"
+        app:layout_constraintTop_toBottomOf="@id/track_name_text_view" />
 </androidx.constraintlayout.widget.ConstraintLayout>

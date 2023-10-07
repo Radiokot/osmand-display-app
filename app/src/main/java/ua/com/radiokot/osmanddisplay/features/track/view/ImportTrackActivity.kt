@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
+import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import com.google.android.material.progressindicator.CircularProgressIndicatorSpec
 import com.google.android.material.progressindicator.IndeterminateDrawable
@@ -14,6 +15,7 @@ import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_import_track.*
 import org.koin.android.ext.android.get
+import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
 import ua.com.radiokot.osmanddisplay.R
@@ -25,16 +27,22 @@ import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.track.data.model.GeoJsonTrackData
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.logic.ImportTrackUseCase
+import ua.com.radiokot.osmanddisplay.features.track.logic.OpenTrackOnlinePreviewUseCase
 import java.io.InputStreamReader
 
 class ImportTrackActivity : BaseActivity() {
     private val logger = kLogger("ImportTrackActivity")
+
+    private val importTrackUseCaseFactory: ImportTrackUseCase.Factory by inject()
 
     @Suppress("DEPRECATION")
     private val file: LocalFile by lazy {
         requireNotNull(intent.getParcelableExtra(FILE_EXTRA)) {
             "No $FILE_EXTRA specified"
         }
+    }
+    private val onlinePreviewUrl: String? by lazy {
+        intent.getStringExtra(ONLINE_PREVIEW_URL_EXTRA)
     }
 
     private lateinit var geoJsonTrackData: GeoJsonTrackData
@@ -153,7 +161,20 @@ class ImportTrackActivity : BaseActivity() {
         import_track_button.setOnClickListener {
             importTrack()
         }
+
+        with(view_online_button) {
+            isVisible = onlinePreviewUrl != null
+            setOnClickListener {
+                onlinePreviewUrl?.also(::openTrackOnlinePreview)
+            }
+        }
     }
+
+    private fun openTrackOnlinePreview(onlinePreviewUrl: String) =
+        OpenTrackOnlinePreviewUseCase(
+            onlinePreviewUrl = onlinePreviewUrl,
+            activity = this,
+        )()
 
     private fun validate() {
         canImport = !trackName.isNullOrBlank()
@@ -166,15 +187,15 @@ class ImportTrackActivity : BaseActivity() {
             return
         }
 
-        get<ImportTrackUseCase> {
-            parametersOf(
-                trackName!!,
-                geoJsonTrackData.track,
-                geoJsonTrackData.poi,
-                trackThumbnail!!,
+        importTrackUseCaseFactory
+            .get(
+                name = trackName!!,
+                geometry = geoJsonTrackData.track,
+                poi = geoJsonTrackData.poi,
+                thumbnail = trackThumbnail!!,
+                onlinePreviewUrl = onlinePreviewUrl,
             )
-        }
-            .perform()
+            .invoke()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
@@ -214,6 +235,7 @@ class ImportTrackActivity : BaseActivity() {
 
     companion object {
         private const val FILE_EXTRA = "file"
+        private const val ONLINE_PREVIEW_URL_EXTRA = "online_preview_url"
         private const val RESULT_EXTRA = "result"
 
         private const val MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024
@@ -221,8 +243,12 @@ class ImportTrackActivity : BaseActivity() {
 
         // Import is only allowed from a file, as passing the GeoJSON content string
         // in an Intent can easily overcome the activity transaction size limit.
-        fun getBundle(file: LocalFile) = Bundle().apply {
+        fun getBundle(
+            file: LocalFile,
+            onlinePreviewUrl: String?,
+        ) = Bundle().apply {
             putParcelable(FILE_EXTRA, file)
+            putString(ONLINE_PREVIEW_URL_EXTRA, onlinePreviewUrl)
         }
 
         @Suppress("DEPRECATION")

@@ -14,7 +14,7 @@ import ua.com.radiokot.osmanddisplay.base.data.storage.RepositoryCache
 import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import java.io.File
-import java.util.*
+import java.util.Date
 
 class ImportedTracksRepository(
     private val directory: File,
@@ -49,6 +49,7 @@ class ImportedTracksRepository(
         geometry: LineString,
         poi: MultiPoint,
         thumbnail: Bitmap,
+        onlinePreviewUrl: String?,
     ): Single<ImportedTrackRecord> {
         val importedAt = Date()
         val id = importedAt.time.toString()
@@ -68,6 +69,7 @@ class ImportedTracksRepository(
                         importedAt = importedAt,
                         geometry = geometry,
                         poi = poi,
+                        onlinePreviewUrl = onlinePreviewUrl,
                     ),
                     fileName = geoJsonFileName
                 )
@@ -79,6 +81,7 @@ class ImportedTracksRepository(
                     importedAt = importedAt,
                     thumbnailImageFile = thumbnailImageFile,
                     geoJsonFile = geoJsonFile,
+                    onlinePreviewUrl = onlinePreviewUrl,
                 )
             }
             .subscribeOn(Schedulers.io())
