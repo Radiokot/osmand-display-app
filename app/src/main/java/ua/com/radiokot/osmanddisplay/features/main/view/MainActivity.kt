@@ -364,12 +364,11 @@ class MainActivity : BaseActivity() {
 
         supportFragmentManager.setFragmentResultListener(
             ImportedTrackSelectionBottomSheet.REQUEST_KEY,
-            this
-        ) { _, bundle ->
-            selectedTrack.value = SelectedTrack.Selected(
-                ImportedTrackSelectionBottomSheet.getResult(bundle)
-            )
-        }
+            this,
+            ImportedTrackSelectionBottomSheet.ResultListener { selectedTrackRecord ->
+                selectedTrack.value = SelectedTrack.Selected(selectedTrackRecord)
+            }
+        )
 
         selectedTrack
             .observe(this) { selectedTrack ->

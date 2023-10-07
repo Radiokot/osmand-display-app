@@ -3,6 +3,7 @@ package ua.com.radiokot.osmanddisplay.features.track.view
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.registerForActivityResult
+import androidx.fragment.app.FragmentResultListener
 import androidx.fragment.app.setFragmentResult
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -172,13 +173,20 @@ class ImportedTrackSelectionBottomSheet :
         compositeDisposable = CompositeDisposable()
     }
 
+    class ResultListener(
+        private val onTrackSelected: (ImportedTrackRecord) -> Unit,
+    ) : FragmentResultListener {
+        @Suppress("DEPRECATION")
+        override fun onFragmentResult(requestKey: String, result: Bundle) {
+            result
+                .getParcelable<ImportedTrackRecord>(RESULT_EXTRA)
+                ?.also(onTrackSelected)
+        }
+    }
+
     companion object {
         const val TAG = "imported-tracks"
         const val REQUEST_KEY = "imported-track-request"
         private const val RESULT_EXTRA = "result"
-
-        fun getResult(bundle: Bundle): ImportedTrackRecord {
-            return bundle.getParcelable(RESULT_EXTRA)!!
-        }
     }
 }
