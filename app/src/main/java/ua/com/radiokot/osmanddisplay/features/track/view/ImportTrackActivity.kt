@@ -1,10 +1,12 @@
 package ua.com.radiokot.osmanddisplay.features.track.view
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import com.google.android.material.progressindicator.CircularProgressIndicatorSpec
@@ -233,6 +235,24 @@ class ImportTrackActivity : BaseActivity() {
         finish()
     }
 
+    /**
+     * Launch the activity to import the track.
+     *
+     * - Input – [getBundle]
+     * - Result – [ImportedTrackRecord] if the import is successful
+     */
+    class ImportContract : ActivityResultContract<Bundle, ImportedTrackRecord?>() {
+        override fun createIntent(context: Context, input: Bundle): Intent =
+            Intent(context, ImportTrackActivity::class.java)
+                .putExtras(input)
+
+        @Suppress("DEPRECATION")
+        override fun parseResult(resultCode: Int, intent: Intent?): ImportedTrackRecord? =
+            intent
+                ?.takeIf { resultCode == Activity.RESULT_OK }
+                ?.getParcelableExtra(RESULT_EXTRA)
+    }
+
     companion object {
         private const val FILE_EXTRA = "file"
         private const val ONLINE_PREVIEW_URL_EXTRA = "online_preview_url"
@@ -249,11 +269,6 @@ class ImportTrackActivity : BaseActivity() {
         ) = Bundle().apply {
             putParcelable(FILE_EXTRA, file)
             putString(ONLINE_PREVIEW_URL_EXTRA, onlinePreviewUrl)
-        }
-
-        @Suppress("DEPRECATION")
-        fun getResult(intent: Intent): ImportedTrackRecord {
-            return intent.getParcelableExtra(RESULT_EXTRA)!!
         }
     }
 }

@@ -1,10 +1,6 @@
 package ua.com.radiokot.osmanddisplay.features.track.brouter.view
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
@@ -16,6 +12,7 @@ import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.base.util.localfile.LocalFile
 import ua.com.radiokot.osmanddisplay.base.view.BaseActivity
 import ua.com.radiokot.osmanddisplay.features.track.brouter.logic.GetTrackFromBRouterWebUseCase
+import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.view.ImportTrackActivity
 import java.io.File
 
@@ -24,7 +21,7 @@ class BRouterUrlActivity : BaseActivity() {
 
     private val trackImportLauncher =
         registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult(),
+            ImportTrackActivity.ImportContract(),
             this::onTrackImportResult
         )
 
@@ -54,13 +51,10 @@ class BRouterUrlActivity : BaseActivity() {
             .subscribeBy(
                 onSuccess = { geoJsonFile ->
                     trackImportLauncher.launch(
-                        Intent(this, ImportTrackActivity::class.java)
-                            .putExtras(
-                                ImportTrackActivity.getBundle(
-                                    file = geoJsonFile,
-                                    onlinePreviewUrl = uri.toString(),
-                                )
-                            )
+                        ImportTrackActivity.getBundle(
+                            file = geoJsonFile,
+                            onlinePreviewUrl = uri.toString(),
+                        )
                     )
                 },
                 onError = {
@@ -73,8 +67,8 @@ class BRouterUrlActivity : BaseActivity() {
             .addTo(compositeDisposable)
     }
 
-    private fun onTrackImportResult(result: ActivityResult) {
-        if (result.resultCode == Activity.RESULT_OK) {
+    private fun onTrackImportResult(importedTrack: ImportedTrackRecord?) {
+        if (importedTrack != null) {
             toastManager.long(R.string.brouter_track_successfully_imported)
         }
         finish()

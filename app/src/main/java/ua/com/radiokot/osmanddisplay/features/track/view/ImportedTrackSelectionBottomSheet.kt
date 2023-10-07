@@ -1,10 +1,7 @@
 package ua.com.radiokot.osmanddisplay.features.track.view
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.registerForActivityResult
 import androidx.fragment.app.setFragmentResult
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -50,7 +47,7 @@ class ImportedTrackSelectionBottomSheet :
         )
     private val trackImportLauncher =
         registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult(),
+            ImportTrackActivity.ImportContract(),
             this::onTrackImportResult
         )
 
@@ -141,13 +138,10 @@ class ImportedTrackSelectionBottomSheet :
     private fun onTrackFileOpened(result: OpenLocalFileContract.Result) {
         if (result is OpenLocalFileContract.Result.Opened) {
             trackImportLauncher.launch(
-                Intent(requireContext(), ImportTrackActivity::class.java)
-                    .putExtras(
-                        ImportTrackActivity.getBundle(
-                            file = result.file,
-                            onlinePreviewUrl = null,
-                        )
-                    )
+                ImportTrackActivity.getBundle(
+                    file = result.file,
+                    onlinePreviewUrl = null,
+                )
             )
         }
     }
@@ -160,10 +154,9 @@ class ImportedTrackSelectionBottomSheet :
         dismiss()
     }
 
-    private fun onTrackImportResult(result: ActivityResult) {
-        val data = result.data
-        if (data != null) {
-            onTrackSelected(ImportTrackActivity.getResult(data))
+    private fun onTrackImportResult(importedTrack: ImportedTrackRecord?) {
+        if (importedTrack != null) {
+            onTrackSelected(importedTrack)
         }
     }
 
