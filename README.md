@@ -2,10 +2,10 @@
 A companion Android application for the [wireless bike navigation display](https://github.com/Radiokot/osmand-display).
 
 The app does:
-- Composing of map frames and sending them to the display
-- Importing and storing GeoJSON tracks
-- Downloading map areas for imported tracks to work offline
-- Broadcasting step-by-step navigation directions from OsmAnd, which was the original purpose of the display, but turned out to be useless
+- Compose map frames and send them to the display
+- Import and store GeoJSON tracks, including BRouter routes
+- Download map areas for imported tracks to work offline
+- Broadcast step-by-step navigation directions from OsmAnd, which was the original purpose of the display, but turned out to be useless
 
 <p float="left">
   <img src="https://user-images.githubusercontent.com/5675681/210539138-c739653d-2bbe-474f-b061-48d86704e82c.png" width="400" alt="Prototyping"/>
