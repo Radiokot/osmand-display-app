@@ -75,6 +75,9 @@ class GetTrackFromBRouterWebUseCase(
         }
 
         body.string()
+            // Workaround for Brouter GeoJSON bug
+            // when some array elements are not separated by comma.
+            .replace("\\}\\s*\\{\\s*\"".toRegex(), "},{\"")
     }
         .toSingle()
         .subscribeOn(Schedulers.io())
