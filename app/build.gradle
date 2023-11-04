@@ -18,8 +18,8 @@ android {
         applicationId "ua.com.radiokot.osmanddisplay"
         minSdk 26
         targetSdk 33
-        versionCode 3
-        versionName "1.2.0"
+        versionCode 4
+        versionName "1.3.0"
 
         if (keystoreProperties['mapboxPublicToken'] != null) {
             buildConfigField 'String', 'MAPBOX_PUBLIC_TOKEN', "\"" + keystoreProperties['mapboxPublicToken'] + "\""
