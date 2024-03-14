@@ -2,7 +2,8 @@ package ua.com.radiokot.osmanddisplay.base.view.dateformat
 
 import android.content.Context
 import java.text.DateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 
 object DateFormats {
     private val locale: Locale
@@ -13,6 +14,9 @@ object DateFormats {
      */
     val longDateOnly: DateFormat
         get() = java.text.SimpleDateFormat("dd MMMM yyyy", locale)
+
+    val timeOnly12h: DateFormat
+        get() = java.text.SimpleDateFormat("h:mm", locale)
 
     /**
      * Formats given date to the long string with time only:
@@ -39,6 +43,7 @@ object DateFormats {
             when {
                 currentDay == actionDay && currentYear == actionYear ->
                     longTimeOnly(context)
+
                 else ->
                     longDateOnly
             }.format(date)

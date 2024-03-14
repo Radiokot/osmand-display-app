@@ -34,6 +34,7 @@ import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.extension.addMultipoint
 import ua.com.radiokot.osmanddisplay.base.extension.addTrack
 import ua.com.radiokot.osmanddisplay.base.extension.getNumericProperty
+import ua.com.radiokot.osmanddisplay.base.view.dateformat.DateFormats
 import ua.com.radiokot.osmanddisplay.features.map.logic.FriendlySnapshotter
 import ua.com.radiokot.osmanddisplay.features.map.logic.MapFrameFactory
 import ua.com.radiokot.osmanddisplay.features.map.logic.SnapshotterMapFrameFactory
@@ -247,6 +248,7 @@ val mapModules: List<Module> = listOf(
                 frameWidthPx = frameSizePx,
                 frameHeightPx = frameSizePx,
                 bearingLineColor = bearingLineColor,
+                timeFormat = DateFormats.timeOnly12h,
             )
         }
     }

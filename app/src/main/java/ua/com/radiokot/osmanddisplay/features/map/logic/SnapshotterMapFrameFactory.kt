@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -16,6 +18,8 @@ import ua.com.radiokot.osmanddisplay.R
 import ua.com.radiokot.osmanddisplay.base.extension.kLogger
 import ua.com.radiokot.osmanddisplay.features.map.model.LocationData
 import java.io.IOException
+import java.text.DateFormat
+import java.util.Date
 import kotlin.math.roundToInt
 
 /**
@@ -31,8 +35,26 @@ class SnapshotterMapFrameFactory(
     private val frameWidthPx: Int,
     private val frameHeightPx: Int,
     private val bearingLineColor: Int = Color.BLACK,
+    private val timeFormat: DateFormat,
 ) : MapFrameFactory {
     private val logger = kLogger("SnapshotterMFF")
+
+    private val bearingLinePaint = Paint().apply {
+        color = bearingLineColor
+        strokeWidth = BEARING_LINE_WIDTH
+    }
+    private val timePaint = Paint().apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 21f
+        style = Paint.Style.FILL
+        color = Color.WHITE
+    }
+    private val timeHeight = timePaint.fontMetrics.bottom - timePaint.fontMetrics.top
+    private val timeDescent = timePaint.fontMetrics.descent
+    private val timeBackgroundPaint = Paint().apply {
+        style = Paint.Style.FILL
+        color = Color.BLACK
+    }
 
     private data class SnapshotResult(
         val error: Throwable?,
@@ -200,12 +222,27 @@ class SnapshotterMapFrameFactory(
                 locationY,
                 locationX,
                 locationY - BEARING_CIRCLE_RADIUS,
-                Paint().apply {
-                    color = bearingLineColor
-                    strokeWidth = BEARING_LINE_WIDTH
-                }
+                bearingLinePaint,
             )
         }
+
+        // Draw the time in 12h format, to be shorter.
+        val time = timeFormat.format(Date())
+        val timeWidth = timePaint.measureText(time)
+        val timeBackgroundRect =
+            Rect(
+                scaledFrame.width - timeWidth.toInt(),
+                scaledFrame.height - timeHeight.toInt(),
+                scaledFrame.width,
+                scaledFrame.height
+            )
+        canvas.drawRect(timeBackgroundRect, timeBackgroundPaint)
+        canvas.drawText(
+            time,
+            timeBackgroundRect.left.toFloat(),
+            timeBackgroundRect.bottom - timeDescent,
+            timePaint
+        )
 
         // Return the result in the required size.
         Bitmap.createScaledBitmap(
