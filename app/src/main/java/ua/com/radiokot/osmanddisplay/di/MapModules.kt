@@ -199,23 +199,29 @@ val mapModules: List<Module> = listOf(
 
     // Map frame factory
     module {
-        factory<MapFrameFactory> { (track: ImportedTrackRecord?, invertLocationMarkerColor: Boolean) ->
+        factory<MapFrameFactory> { (track: ImportedTrackRecord?, invertOverlays: Boolean) ->
             val snapshotSizePx = 450
             val frameSizePx = 200
 
             val locationMarker: Bitmap
             val bearingLineColor: Int
+            val timeColor: Int
+            val timeBackgroundColor: Int
 
             val defaultLocationMarker = BitmapFactory.decodeResource(
                 get<Context>().resources,
                 R.drawable.location
             )
 
-            if (!invertLocationMarkerColor) {
+            if (!invertOverlays) {
                 bearingLineColor = Color.BLACK
+                timeColor = Color.WHITE
+                timeBackgroundColor = Color.BLACK
                 locationMarker = defaultLocationMarker
             } else {
                 bearingLineColor = Color.WHITE
+                timeColor = Color.BLACK
+                timeBackgroundColor = Color.WHITE
                 locationMarker = Bitmap.createBitmap(
                     defaultLocationMarker.width,
                     defaultLocationMarker.height,
@@ -249,6 +255,8 @@ val mapModules: List<Module> = listOf(
                 frameHeightPx = frameSizePx,
                 bearingLineColor = bearingLineColor,
                 timeFormat = DateFormats.timeOnly12h,
+                timeColor = timeColor,
+                timeBackgroundColor = timeBackgroundColor,
             )
         }
     }

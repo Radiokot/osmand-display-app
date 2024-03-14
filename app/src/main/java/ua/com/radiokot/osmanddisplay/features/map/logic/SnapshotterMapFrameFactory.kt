@@ -34,8 +34,10 @@ class SnapshotterMapFrameFactory(
     private val locationMarker: Bitmap,
     private val frameWidthPx: Int,
     private val frameHeightPx: Int,
-    private val bearingLineColor: Int = Color.BLACK,
+    private val bearingLineColor: Int,
     private val timeFormat: DateFormat,
+    private val timeColor: Int,
+    private val timeBackgroundColor: Int,
 ) : MapFrameFactory {
     private val logger = kLogger("SnapshotterMFF")
 
@@ -45,15 +47,15 @@ class SnapshotterMapFrameFactory(
     }
     private val timePaint = Paint().apply {
         typeface = Typeface.DEFAULT_BOLD
-        textSize = 21f
+        textSize = TIME_TEXT_SIZE
         style = Paint.Style.FILL
-        color = Color.WHITE
+        color = timeColor
     }
     private val timeHeight = timePaint.fontMetrics.bottom - timePaint.fontMetrics.top
     private val timeDescent = timePaint.fontMetrics.descent
     private val timeBackgroundPaint = Paint().apply {
         style = Paint.Style.FILL
-        color = Color.BLACK
+        color = timeBackgroundColor
     }
 
     private data class SnapshotResult(
@@ -294,5 +296,6 @@ class SnapshotterMapFrameFactory(
     private companion object {
         private const val BEARING_CIRCLE_RADIUS = 10f
         private const val BEARING_LINE_WIDTH = 5f
+        private const val TIME_TEXT_SIZE = 21f
     }
 }
