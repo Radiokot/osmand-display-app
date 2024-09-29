@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx creator="StravaGPX" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+ <metadata>
+  <name>На тот берег</name>
+  <author>
+   <name>Oleg Koretsky</name>
+   <link href="https://www.strava.com/athletes/31044651"/>
+  </author>
+  <copyright author="OpenStreetMap contributors">
+   <year>2020</year>
+   <license>https://www.openstreetmap.org/copyright</license>
+  </copyright>
+  <link href="https://www.strava.com/routes/3044739247970226322"/>
+ </metadata>
+ <trk>
+  <name>На тот берег</name>
+  <link href="https://www.strava.com/routes/3044739247970226322"/>
+  <type>cycling</type>
+  <trkseg>
+   <trkpt lat="48.45664000000001" lon="35.072030000000005">
+    <ele>102.83</ele>
+   </trkpt>
+   <trkpt lat="48.4566" lon="35.07115">
+    <ele>106.59</ele>
+   </trkpt>
+  </trkseg>
+ </trk>
+</gpx>

@@ -12,6 +12,26 @@ class GeoJsonTrackDataTest {
 
         Assert.assertEquals("На тот берег", geoJsonTrackData.name)
         Assert.assertEquals(0, geoJsonTrackData.poi.coordinates().size)
+        Assert.assertEquals(
+            35.072030000000005,
+            geoJsonTrackData.track.coordinates().first().longitude(),
+            0.000001
+        )
+        Assert.assertEquals(
+            48.45664000000001,
+            geoJsonTrackData.track.coordinates().first().latitude(),
+            0.000001
+        )
+        Assert.assertEquals(
+            35.07115,
+            geoJsonTrackData.track.coordinates().last().longitude(),
+            0.000001
+        )
+        Assert.assertEquals(
+            48.4566,
+            geoJsonTrackData.track.coordinates().last().latitude(),
+            0.000001
+        )
     }
 
     @Test
@@ -38,7 +58,7 @@ class GeoJsonTrackDataTest {
     fun readWithTrailingCommas() {
         val content = TestAssets.readText("BRouterTrackWithTrailingComma.geojson")
         val geoJsonTrackData = GeoJsonTrackData.fromFileContent(content)
-        
+
         Assert.assertEquals(2, geoJsonTrackData.poi.coordinates().size)
     }
 
@@ -60,5 +80,34 @@ class GeoJsonTrackDataTest {
 
         Assert.assertNull(geoJsonTrackData.name)
         Assert.assertEquals(0, geoJsonTrackData.poi.coordinates().size)
+    }
+
+    @Test
+    fun readStravaGpx() {
+        val content = TestAssets.readText("StravaTrack.gpx")
+        val geoJsonTrackData = GeoJsonTrackData.fromGpxContent(content)
+
+        Assert.assertEquals("На тот берег", geoJsonTrackData.name)
+        Assert.assertEquals(0, geoJsonTrackData.poi.coordinates().size)
+        Assert.assertEquals(
+            35.072030000000005,
+            geoJsonTrackData.track.coordinates().first().longitude(),
+            0.000001
+        )
+        Assert.assertEquals(
+            48.45664000000001,
+            geoJsonTrackData.track.coordinates().first().latitude(),
+            0.000001
+        )
+        Assert.assertEquals(
+            35.07115,
+            geoJsonTrackData.track.coordinates().last().longitude(),
+            0.000001
+        )
+        Assert.assertEquals(
+            48.4566,
+            geoJsonTrackData.track.coordinates().last().latitude(),
+            0.000001
+        )
     }
 }

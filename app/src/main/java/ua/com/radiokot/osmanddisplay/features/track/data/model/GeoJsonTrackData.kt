@@ -1,9 +1,17 @@
 package ua.com.radiokot.osmanddisplay.features.track.data.model
 
 import android.os.Parcelable
+import com.ctc.wstx.stax.WstxInputFactory
+import com.ctc.wstx.stax.WstxOutputFactory
+import com.fasterxml.jackson.dataformat.xml.XmlFactory
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.mapbox.geojson.*
+import com.mapbox.geojson.Feature
+import com.mapbox.geojson.FeatureCollection
+import com.mapbox.geojson.LineString
+import com.mapbox.geojson.MultiPoint
+import com.mapbox.geojson.Point
 import kotlinx.android.parcel.Parcelize
 
 @Parcelize
@@ -40,8 +48,10 @@ class GeoJsonTrackData(
                         // Safe calls are required.
                         // Arbitrary file parsing result may contain null features.
                         ?.find { it?.geometry() is LineString }
+
                 geoJsonType == "Feature" ->
                     Feature.fromJson(content)
+
                 else ->
                     null
             }
@@ -68,6 +78,31 @@ class GeoJsonTrackData(
                 name = name,
                 track = track,
                 poi = poi,
+            )
+        }
+
+        fun fromGpxContent(content: String): GeoJsonTrackData {
+            val xmlMapper = XmlMapper.builder(
+                XmlFactory.builder()
+                    .xmlInputFactory(WstxInputFactory())
+                    .xmlOutputFactory(WstxOutputFactory())
+                    .build()
+            ).build()
+
+            val gpx: Gpx = xmlMapper.readValue(
+                content,
+                Gpx::class.java,
+            )
+
+            return GeoJsonTrackData(
+                name = gpx.metadata.name
+                    ?.takeIf(String::isNotEmpty),
+                track = LineString.fromLngLats(
+                    gpx.track.segments
+                        .flatMap(Gpx.Track.Segment::trackPoints)
+                        .map { Point.fromLngLat(it.lon, it.lat) }
+                ),
+                poi = MultiPoint.fromLngLats(emptyList()),
             )
         }
     }
