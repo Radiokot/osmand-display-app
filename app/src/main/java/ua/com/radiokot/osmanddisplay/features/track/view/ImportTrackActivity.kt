@@ -15,7 +15,11 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import kotlinx.android.synthetic.main.activity_import_track.*
+import kotlinx.android.synthetic.main.activity_import_track.import_track_button
+import kotlinx.android.synthetic.main.activity_import_track.thumbnail_preparing_text_view
+import kotlinx.android.synthetic.main.activity_import_track.track_name_edit_text
+import kotlinx.android.synthetic.main.activity_import_track.track_thumbnail_image_view
+import kotlinx.android.synthetic.main.activity_import_track.view_online_button
 import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
@@ -30,7 +34,7 @@ import ua.com.radiokot.osmanddisplay.features.track.data.model.GeoJsonTrackData
 import ua.com.radiokot.osmanddisplay.features.track.data.model.ImportedTrackRecord
 import ua.com.radiokot.osmanddisplay.features.track.logic.ImportTrackUseCase
 import ua.com.radiokot.osmanddisplay.features.track.logic.OpenTrackOnlinePreviewUseCase
-import java.io.InputStreamReader
+import ua.com.radiokot.osmanddisplay.features.track.logic.ReadGeoJsonFileUseCase
 
 class ImportTrackActivity : BaseActivity() {
     private val logger = kLogger("ImportTrackActivity")
@@ -116,10 +120,8 @@ class ImportTrackActivity : BaseActivity() {
             "The file is too big: ${file.size} bytes"
         }
 
-        contentResolver.openInputStream(file.uri).use {
-            InputStreamReader(it)
-                .readText()
-                .let(GeoJsonTrackData.Companion::fromFileContent)
+        contentResolver.openInputStream(file.uri)!!.use {
+            ReadGeoJsonFileUseCase().invoke(it).blockingGet()
         }
     } catch (e: Exception) {
         logger.error(e) { "readFileOrFinish(): check_failed" }

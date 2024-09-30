@@ -1,14 +1,20 @@
 package ua.com.radiokot.osmanddisplay
 
+import com.ctc.wstx.stax.WstxInputFactory
+import com.ctc.wstx.stax.WstxOutputFactory
+import com.fasterxml.jackson.dataformat.xml.XmlFactory
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import org.junit.Assert
 import org.junit.Test
-import ua.com.radiokot.osmanddisplay.features.track.data.model.GeoJsonTrackData
+import ua.com.radiokot.osmanddisplay.features.track.logic.ReadGeoJsonFileUseCase
+import ua.com.radiokot.osmanddisplay.features.track.logic.ReadGpxFileUseCase
 
-class GeoJsonTrackDataTest {
+class TrackDataTest {
     @Test
     fun readFeatureCollection() {
-        val content = TestAssets.readText("StravaTrack.geojson")
-        val geoJsonTrackData = GeoJsonTrackData.fromFileContent(content)
+        val geoJsonTrackData = ReadGeoJsonFileUseCase().invoke(
+            TestAssets.getInputStream("StravaTrack.geojson")
+        ).blockingGet()
 
         Assert.assertEquals("На тот берег", geoJsonTrackData.name)
         Assert.assertEquals(0, geoJsonTrackData.poi.coordinates().size)
@@ -36,8 +42,9 @@ class GeoJsonTrackDataTest {
 
     @Test
     fun readFeature() {
-        val content = TestAssets.readText("BRouterTrack.geojson")
-        val geoJsonTrackData = GeoJsonTrackData.fromFileContent(content)
+        val geoJsonTrackData = ReadGeoJsonFileUseCase().invoke(
+            TestAssets.getInputStream("BRouterTrack.geojson")
+        ).blockingGet()
 
         Assert.assertEquals("Днепр (16,2km)", geoJsonTrackData.name)
         Assert.assertEquals(0, geoJsonTrackData.poi.coordinates().size)
@@ -45,8 +52,9 @@ class GeoJsonTrackDataTest {
 
     @Test
     fun readWithPoi() {
-        val content = TestAssets.readText("BRouterTrackWithPOI.geojson")
-        val geoJsonTrackData = GeoJsonTrackData.fromFileContent(content)
+        val geoJsonTrackData = ReadGeoJsonFileUseCase().invoke(
+            TestAssets.getInputStream("BRouterTrackWithPOI.geojson")
+        ).blockingGet()
 
         val poi = geoJsonTrackData.poi
         Assert.assertEquals(3, poi.coordinates().size)
@@ -56,27 +64,25 @@ class GeoJsonTrackDataTest {
 
     @Test
     fun readWithTrailingCommas() {
-        val content = TestAssets.readText("BRouterTrackWithTrailingComma.geojson")
-        val geoJsonTrackData = GeoJsonTrackData.fromFileContent(content)
+        val geoJsonTrackData = ReadGeoJsonFileUseCase().invoke(
+            TestAssets.getInputStream("BRouterTrackWithTrailingComma.geojson")
+        ).blockingGet()
 
         Assert.assertEquals(2, geoJsonTrackData.poi.coordinates().size)
     }
 
     @Test(expected = IllegalStateException::class)
     fun readEmptyFeatureCollection() {
-        val content = """
-            {
-                "type": "FeatureCollection",
-                "features": []
-            }
-        """.trimIndent()
-        GeoJsonTrackData.fromFileContent(content)
+        ReadGeoJsonFileUseCase().invoke(
+            TestAssets.getInputStream("EmptyCollectionTrack.geojson")
+        ).blockingGet()
     }
 
     @Test
     fun readFeatureWithNoName() {
-        val content = TestAssets.readText("NamelessTrack.geojson")
-        val geoJsonTrackData = GeoJsonTrackData.fromFileContent(content)
+        val geoJsonTrackData = ReadGeoJsonFileUseCase().invoke(
+            TestAssets.getInputStream("NamelessTrack.geojson")
+        ).blockingGet()
 
         Assert.assertNull(geoJsonTrackData.name)
         Assert.assertEquals(0, geoJsonTrackData.poi.coordinates().size)
@@ -84,29 +90,36 @@ class GeoJsonTrackDataTest {
 
     @Test
     fun readStravaGpx() {
-        val content = TestAssets.readText("StravaTrack.gpx")
-        val geoJsonTrackData = GeoJsonTrackData.fromGpxContent(content)
+        val gpxTrackData = ReadGpxFileUseCase(
+            xmlMapper = XmlMapper.builder(
+                XmlFactory.builder()
+                    .xmlInputFactory(WstxInputFactory())
+                    .xmlOutputFactory(WstxOutputFactory())
+                    .build()
+            ).build()
+        )
+            .invoke(TestAssets.getInputStream("StravaTrack.gpx"))
+            .blockingGet()
 
-        Assert.assertEquals("На тот берег", geoJsonTrackData.name)
-        Assert.assertEquals(0, geoJsonTrackData.poi.coordinates().size)
+        Assert.assertEquals("На тот берег", gpxTrackData.name)
         Assert.assertEquals(
             35.072030000000005,
-            geoJsonTrackData.track.coordinates().first().longitude(),
+            gpxTrackData.track.first().lon,
             0.000001
         )
         Assert.assertEquals(
             48.45664000000001,
-            geoJsonTrackData.track.coordinates().first().latitude(),
+            gpxTrackData.track.first().lat,
             0.000001
         )
         Assert.assertEquals(
             35.07115,
-            geoJsonTrackData.track.coordinates().last().longitude(),
+            gpxTrackData.track.last().lon,
             0.000001
         )
         Assert.assertEquals(
             48.4566,
-            geoJsonTrackData.track.coordinates().last().latitude(),
+            gpxTrackData.track.last().lat,
             0.000001
         )
     }

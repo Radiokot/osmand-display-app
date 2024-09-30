@@ -9,7 +9,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JacksonXmlRootElement(localName = "gpx")
-class Gpx
+class GpxData
 @JsonCreator
 constructor(
     @JsonProperty("metadata")
