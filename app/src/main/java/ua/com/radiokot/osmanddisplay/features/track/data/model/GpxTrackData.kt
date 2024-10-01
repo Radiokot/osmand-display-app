@@ -11,7 +11,7 @@ class GpxTrackData(
             ?.takeIf(String::isNotEmpty),
         track = gpx.track.segments
             .flatMap(GpxData.Track.Segment::trackPoints),
-        link = gpx.metadata.link
+        link = gpx.metadata.link?.href
             ?.takeIf(String::isNotEmpty),
     )
 }

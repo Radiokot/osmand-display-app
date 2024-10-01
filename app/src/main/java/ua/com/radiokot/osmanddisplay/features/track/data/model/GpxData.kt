@@ -25,8 +25,16 @@ constructor(
         @JsonProperty("name")
         val name: String?,
         @JsonProperty("link")
-        val link: String?,
-    )
+        val link: Link?,
+    ) {
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        class Link
+        @JsonCreator
+        constructor(
+            @JacksonXmlProperty(localName = "href", isAttribute = true)
+            val href: String,
+        )
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     class Track

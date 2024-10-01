@@ -102,6 +102,7 @@ class TrackDataTest {
             .blockingGet()
 
         Assert.assertEquals("На тот берег", gpxTrackData.name)
+        Assert.assertEquals("https://www.strava.com/routes/3044739247970226322", gpxTrackData.link)
         Assert.assertEquals(
             35.072030000000005,
             gpxTrackData.track.first().lon,
