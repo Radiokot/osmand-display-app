@@ -5,8 +5,12 @@ import android.companion.CompanionDeviceManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import com.ctc.wstx.stax.WstxInputFactory
+import com.ctc.wstx.stax.WstxOutputFactory
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.xml.XmlFactory
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.android.gms.location.LocationServices
 import com.welie.blessed.BluetoothCentralManager
@@ -24,7 +28,7 @@ import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.DisplayCommandS
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.OsmAndAidlHelper
 import ua.com.radiokot.osmanddisplay.features.broadcasting.logic.OsmAndServiceConnectionListener
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
 val commonModules: List<Module> = listOf(
     // JSON
@@ -32,6 +36,18 @@ val commonModules: List<Module> = listOf(
         single<ObjectMapper> {
             jacksonObjectMapper()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        }
+    },
+
+    // XML
+    module {
+        single<XmlMapper> {
+            XmlMapper.builder(
+                XmlFactory.builder()
+                    .xmlInputFactory(WstxInputFactory())
+                    .xmlOutputFactory(WstxOutputFactory())
+                    .build()
+            ).build()
         }
     },
 

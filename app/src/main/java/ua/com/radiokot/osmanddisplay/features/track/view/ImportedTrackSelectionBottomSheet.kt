@@ -39,11 +39,7 @@ class ImportedTrackSelectionBottomSheet :
     private val trackFileOpeningLauncher =
         registerForActivityResult(
             OpenLocalFileContract(lazy { requireContext().contentResolver }),
-            setOf(
-                "application/vnd.geo+json", // Hopeless
-                "application/json",
-                "application/octet-stream"
-            ),
+            emptySet(),
             this::onTrackFileOpened
         )
     private val trackImportLauncher =

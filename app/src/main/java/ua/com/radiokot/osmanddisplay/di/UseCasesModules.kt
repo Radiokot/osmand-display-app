@@ -2,12 +2,15 @@ package ua.com.radiokot.osmanddisplay.di
 
 import android.app.Activity
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.singleOf
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
 import ua.com.radiokot.osmanddisplay.features.main.logic.ScanAndSelectBleDeviceUseCase
 import ua.com.radiokot.osmanddisplay.features.track.brouter.logic.GetTrackFromBRouterWebUseCase
 import ua.com.radiokot.osmanddisplay.features.track.logic.ClearImportedTracksUseCase
 import ua.com.radiokot.osmanddisplay.features.track.logic.ImportTrackUseCase
+import ua.com.radiokot.osmanddisplay.features.track.logic.ReadGeoJsonFileUseCase
+import ua.com.radiokot.osmanddisplay.features.track.logic.ReadGpxFileUseCase
 import java.util.UUID
 
 val useCaseModules: List<Module> = listOf(
@@ -53,5 +56,8 @@ val useCaseModules: List<Module> = listOf(
                 tileStore = get(),
             )
         }
+
+        singleOf(::ReadGeoJsonFileUseCase)
+        singleOf(::ReadGpxFileUseCase)
     },
 )
