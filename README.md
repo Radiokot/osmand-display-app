@@ -3,7 +3,7 @@ A companion Android application for the [wireless bike navigation display](https
 
 The app does:
 - Compose map frames and send them to the display
-- Import and store GeoJSON tracks, including BRouter routes
+- Import and store GPX and GeoJSON tracks, BRouter routes
 - Download map areas for imported tracks to work offline
 - Broadcast step-by-step navigation directions from OsmAnd, which was the original purpose of the display, but turned out to be useless
 
