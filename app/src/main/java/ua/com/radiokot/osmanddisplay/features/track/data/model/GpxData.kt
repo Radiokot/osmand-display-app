@@ -13,7 +13,7 @@ class GpxData
 @JsonCreator
 constructor(
     @JsonProperty("metadata")
-    val metadata: Metadata,
+    val metadata: Metadata?,
     @JsonProperty("trk")
     val track: Track,
 ) {
@@ -43,6 +43,8 @@ constructor(
         @JsonProperty("trkseg")
         @JacksonXmlElementWrapper(useWrapping = false)
         val segments: List<Segment>,
+        @JsonProperty("name")
+        val name: String?,
     ) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)

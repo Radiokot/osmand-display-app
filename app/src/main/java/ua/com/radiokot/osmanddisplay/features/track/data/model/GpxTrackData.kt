@@ -7,11 +7,11 @@ class GpxTrackData(
 ) {
 
     constructor(gpx: GpxData) : this(
-        name = gpx.metadata.name
+        name = (gpx.metadata?.name ?: gpx.track.name)
             ?.takeIf(String::isNotEmpty),
         track = gpx.track.segments
             .flatMap(GpxData.Track.Segment::trackPoints),
-        link = gpx.metadata.link?.href
+        link = gpx.metadata?.link?.href
             ?.takeIf(String::isNotEmpty),
     )
 }
